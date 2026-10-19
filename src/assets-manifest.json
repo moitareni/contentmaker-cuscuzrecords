@@ -1,0 +1,133 @@
+{
+  "post": {
+    "width": 1080,
+    "height": 1440
+  },
+  "backgrounds": [
+    {
+      "id": "pronto-1",
+      "category": "pronto",
+      "label": "Pronto 1",
+      "src": "/brand/bg-pronto-1.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-pronto-1.webp"
+    },
+    {
+      "id": "pronto-2",
+      "category": "pronto",
+      "label": "Pronto 2",
+      "src": "/brand/bg-pronto-2.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-pronto-2.webp"
+    },
+    {
+      "id": "pronto-3",
+      "category": "pronto",
+      "label": "Pronto 3",
+      "src": "/brand/bg-pronto-3.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-pronto-3.webp"
+    },
+    {
+      "id": "puro-1",
+      "category": "puro",
+      "label": "Puro 1",
+      "src": "/brand/bg-puro-1.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-puro-1.webp"
+    },
+    {
+      "id": "puro-2",
+      "category": "puro",
+      "label": "Puro 2",
+      "src": "/brand/bg-puro-2.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-puro-2.webp"
+    },
+    {
+      "id": "puro-3",
+      "category": "puro",
+      "label": "Puro 3",
+      "src": "/brand/bg-puro-3.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-puro-3.webp"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "flores",
+      "label": "Flores",
+      "src": "/brand/deco-flores.webp",
+      "width": 357,
+      "height": 459,
+      "thumb": "/brand/thumbs/deco-flores.webp"
+    },
+    {
+      "id": "folhas-1",
+      "label": "Folhas 1",
+      "src": "/brand/deco-folhas-1.webp",
+      "width": 152,
+      "height": 348,
+      "thumb": "/brand/thumbs/deco-folhas-1.webp"
+    },
+    {
+      "id": "folhas-2",
+      "label": "Folhas 2",
+      "src": "/brand/deco-folhas-2.webp",
+      "width": 153,
+      "height": 1023,
+      "thumb": "/brand/thumbs/deco-folhas-2.webp"
+    },
+    {
+      "id": "ondas-1",
+      "label": "Ondas 1",
+      "src": "/brand/deco-ondas-1.webp",
+      "width": 618,
+      "height": 410,
+      "thumb": "/brand/thumbs/deco-ondas-1.webp"
+    },
+    {
+      "id": "ondas-2",
+      "label": "Ondas 2",
+      "src": "/brand/deco-ondas-2.webp",
+      "width": 1072,
+      "height": 100,
+      "thumb": "/brand/thumbs/deco-ondas-2.webp"
+    }
+  ],
+  "logos": [
+    {
+      "id": "paper",
+      "label": "Com papel",
+      "src": "/brand/logo-paper.webp",
+      "width": 1850,
+      "height": 1761,
+      "thumb": "/brand/thumbs/logo-paper.webp"
+    },
+    {
+      "id": "clean",
+      "label": "Sem fundo",
+      "src": "/brand/logo-clean.webp",
+      "width": 2160,
+      "height": 1987,
+      "thumb": "/brand/thumbs/logo-clean.webp"
+    }
+  ],
+  "borderTexture": {
+    "src": "/brand/textura-borda.webp",
+    "width": 1078,
+    "height": 1370
+  },
+  "paperTexture": {
+    "src": "/brand/papel-textura.webp",
+    "width": 2160,
+    "height": 1642,
+    "thumb": "/brand/thumbs/papel-textura.webp"
+  }
+}

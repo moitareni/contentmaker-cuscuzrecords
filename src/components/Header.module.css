@@ -1,0 +1,63 @@
+.header {
+  height: 64px;
+  background-color: var(--c-surface);
+  border-bottom: 3px solid var(--c-border);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 0 rgba(11, 5, 0, 0.05);
+  position: relative;
+  z-index: 50;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 0 var(--c-border));
+}
+
+.title {
+  font-size: 20px;
+  color: var(--c-text-main);
+  line-height: 1;
+}
+
+.subtitle {
+  font-family: var(--font-headline);
+  font-size: 13px;
+  color: var(--c-barro);
+  letter-spacing: 0.5px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.historyGroup {
+  display: flex;
+  gap: 4px;
+}
+
+@media (max-width: 640px) {
+  .header {
+    height: 56px;
+    padding: 0 12px;
+  }
+  .title {
+    font-size: 17px;
+  }
+  .subtitle {
+    display: none;
+  }
+}

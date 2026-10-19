@@ -1,0 +1,99 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--c-bg);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.sidebar {
+  width: 380px;
+  min-width: 340px;
+  max-width: 420px;
+  background-color: var(--c-surface-card);
+  border-right: 3px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+  box-shadow: 2px 0 0 rgba(11, 5, 0, 0.05);
+}
+
+.stepContent {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.canvasArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: var(--c-bg);
+  overflow: hidden;
+}
+
+/* Dock lateral direito: ações do elemento + guias + download */
+.dock {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 148px;
+  z-index: 30;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 2px;
+}
+
+/* Botão de download ocupa a largura cheia do dock */
+.dock .dockDownload {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .dock {
+    right: 8px;
+    gap: 8px;
+  }
+}
+
+/* Responsividade Mobile e Telas Menores */
+@media (max-width: 1024px) {
+  .app {
+    height: 100dvh;
+  }
+
+  .main {
+    flex-direction: column-reverse;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: auto;
+    max-width: none;
+    height: 48%;
+    border-right: none;
+    border-top: 3px solid var(--c-border);
+    box-shadow: 0 -4px 0 rgba(11, 5, 0, 0.05);
+  }
+
+  .canvasArea {
+    flex: 1;
+    min-height: 52%;
+  }
+}

@@ -1,0 +1,17 @@
+.footer {
+  padding: 16px 20px;
+  background-color: var(--c-surface);
+  border-top: 3px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  z-index: 40;
+}
+
+@media (max-width: 640px) {
+  .footer {
+    padding: 12px 14px;
+  }
+}

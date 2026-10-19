@@ -1,0 +1,77 @@
+.stepper {
+  display: flex;
+  background-color: var(--c-surface-card);
+  border-bottom: 3px solid var(--c-border);
+  padding: 6px 16px;
+  gap: 8px;
+  overflow-x: auto;
+  align-items: center;
+}
+
+.stepButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  transition: all var(--duration-fast) ease;
+  white-space: nowrap;
+}
+
+.stepButton:hover {
+  background-color: var(--c-surface-muted);
+}
+
+.label {
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--c-text-muted);
+}
+
+.tag {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background-color: var(--c-surface-muted);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  color: var(--c-text-muted);
+}
+
+.active {
+  background-color: var(--c-amarelo);
+  border-color: var(--c-border);
+  box-shadow: 0 2px 0 var(--c-border);
+}
+
+.active .label {
+  color: var(--c-text-main);
+}
+
+.active .tag {
+  background-color: var(--c-surface);
+  color: var(--c-text-main);
+}
+
+.past .label {
+  color: var(--c-text-main);
+}
+
+@media (max-width: 640px) {
+  .stepper {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .stepButton {
+    padding: 4px 8px;
+  }
+  .label {
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "cuscuz-insta-kit",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cuscuz Records Insta Kit — gerador de posts 3:4 para Instagram com a identidade visual da marca.",
+  "scripts": {
+    "dev": "vite",
+    "assets": "node scripts/build-assets.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource/londrina-solid": "^5.1.0",
+    "@fontsource/pt-sans-narrow": "^5.1.0",
+    "canvas-confetti": "^1.9.3",
+    "konva": "^9.3.18",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/canvas-confetti": "^1.6.4",
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "jsdom": "^25.0.1",
+    "sharp": "^0.33.5",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  }
+}
