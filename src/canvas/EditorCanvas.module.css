@@ -36,14 +36,28 @@
 .canvasFrame {
   position: relative;
   flex: none;
-  /* margin: auto não funciona aqui — as margens são o espaço físico do pad
-     do palco (alças fora da folha), definidas no JSX a cada render */
+  /* content-box: o width/height definidos no JSX são a FOLHA (área 3:4 da
+     arte); a borda de 4px fica FORA dessa medida. Com o border-box global,
+     a content box encolhia 8px e a arte desenhada pelo palco (originada na
+     content box) engolia a borda direita/inferior e vazava além da folha. */
+  box-sizing: content-box;
+  /* margin definido no JSX por render (pad do palco, valor fixo por zoom) */
   background-color: var(--c-surface);
   border: 4px solid var(--c-border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-canvas);
   overflow: visible;
-  transition: width 0.15s ease, height 0.15s ease;
+}
+
+/* Recorte da arte aos limites da folha, com os cantos por dentro da borda
+   (raio externo − 4px). O palco é maior que a folha (pads para as alças) e
+   sem esse recorte os cantos em-quadrado do canvas esbarram na curva da
+   borda; fora da folha o canvas é transparente, então nada mais se perde. */
+.sheetClip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: calc(var(--radius-sm) - 4px);
 }
 
 /* Espaço segurado: cursor de mãozinha */
@@ -51,12 +65,57 @@
   cursor: grab;
 }
 
+/* Palco overlay do Transformer: canvas irmão do principal, posicionado por
+   translate (imperativo, via JS) para colar sua origem na origem do canvas
+   principal. A rolagem move só o transform — as alças acompanham o conteúdo
+   sem redesenho. pointer-events só no canvas, para o dock (z-index 30) e o
+   editor in-place (z-index 100) continuarem acessíveis. */
+.handleOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.handleOverlay canvas {
+  pointer-events: auto;
+}
+
+/* Sem cursor próprio aqui: o padrão do app é a seta sobre a folha, com os
+   cursors de resize/rotate vindos via inline do Konva (ele seta no
+   .konvajs-content ao passar sobre âncoras/rotater). O pan com espaço já
+   cobre o overlay via .panActive * abaixo. */
+
 .panActive {
   cursor: grabbing;
 }
 
 .panActive * {
   cursor: grabbing !important;
+}
+
+/* Dropzone de arquivos sobre a área da folha (etapa 3 / imagens do usuário) */
+.dropOverlay {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px dashed var(--c-verde);
+  border-radius: var(--radius-md);
+  background-color: rgba(247, 235, 205, 0.88);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.dropOverlay span {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--c-text-main);
 }
 
 @media (max-width: 640px) {

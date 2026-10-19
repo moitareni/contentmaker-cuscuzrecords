@@ -32,7 +32,9 @@ export const AlignToolbar: React.FC<AlignToolbarProps> = ({ onAlignToPage }) => 
 
   if (!selected) return null;
 
-  const isDecoration = selected.kind === 'decoration';
+  // Enfeites e imagens do usuário têm espelhamento (flipX/flipY no store)
+  const flipTarget =
+    selected.kind === 'decoration' || selected.kind === 'image' ? selected : null;
 
   return (
     <aside aria-label="Ações do elemento" className={styles.toolbar}>
@@ -82,8 +84,8 @@ export const AlignToolbar: React.FC<AlignToolbarProps> = ({ onAlignToPage }) => 
         />
       </div>
 
-      {/* Espelhamento para Enfeites */}
-      {isDecoration && (
+      {/* Espelhamento para Enfeites e Imagens */}
+      {flipTarget && (
         <>
           <div className={styles.divider} />
           <div className={styles.group}>
@@ -91,15 +93,15 @@ export const AlignToolbar: React.FC<AlignToolbarProps> = ({ onAlignToPage }) => 
               icon={<FlipHorizontal size={17} strokeWidth={2.5} />}
               label="Espelhar horizontalmente"
               size="sm"
-              active={selected.flipX}
-              onClick={() => updateElement(selected.id, { flipX: !selected.flipX })}
+              active={flipTarget.flipX}
+              onClick={() => updateElement(flipTarget.id, { flipX: !flipTarget.flipX })}
             />
             <IconButton
               icon={<FlipVertical size={17} strokeWidth={2.5} />}
               label="Espelhar verticalmente"
               size="sm"
-              active={selected.flipY}
-              onClick={() => updateElement(selected.id, { flipY: !selected.flipY })}
+              active={flipTarget.flipY}
+              onClick={() => updateElement(flipTarget.id, { flipY: !flipTarget.flipY })}
             />
           </div>
         </>

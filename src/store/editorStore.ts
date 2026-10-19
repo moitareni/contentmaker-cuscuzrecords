@@ -26,7 +26,8 @@ import {
 import { getBackground, getDecoration, getLogo } from '../assets';
 import { clampTextSize } from '../lib/textRules';
 import { clampZoom } from '../lib/zoom';
-import { STEP_OF_KIND, type Doc, type El, type FinishState, type GrainFinish, type LogoEl, type PaperFinish, type StepId, type TextEl } from '../types';
+import { clampImageCenter, hasImageSlots, initialImageScale, isPersistedImage } from '../lib/imageRules';
+import { STEP_OF_KIND, type Doc, type El, type FinishState, type GrainFinish, type ImageEl, type LogoEl, type PaperFinish, type StepId, type TextEl } from '../types';
 
 export interface Toast {
   id: number;
@@ -36,6 +37,14 @@ export interface Toast {
 
 export type Corner = 'tl' | 'tr' | 'bl' | 'br';
 export type LogoPlace = Corner | 'tc' | 'bc' | 'center';
+
+/** Metadados de uma imagem importada (o blob vive no userImages/IndexedDB). */
+export interface ImageMeta {
+  imageId: string;
+  name: string;
+  width: number;
+  height: number;
+}
 
 /** Guias de layout (Photoshop-like). Visibilidade fora do doc: nunca persiste nem entra no undo. */
 export interface LayoutGuides {
@@ -79,7 +88,7 @@ export interface EditorState {
   guides: { v: boolean; h: boolean };
   toast: Toast | null;
   layoutGuides: LayoutGuides;
-  /** Acabamento (passo 5). Persiste e entra no undo junto com o doc. */
+  /** Acabamento (passo 6). Persiste e entra no undo junto com o doc. */
   finish: FinishState;
   /** Zoom da folha (multiplicador sobre o ajuste à tela). Sessão: nunca persiste nem entra no undo. */
   zoom: number;
@@ -108,6 +117,12 @@ export interface EditorState {
   addDecoration: (assetId: string) => void;
   addText: (style: TextStyle) => void;
   addLogo: (variant: LogoEl['variant']) => void;
+  /** Adiciona imagem do usuário (limite de 5). `at` = centro do drop na folha. */
+  addImage: (meta: ImageMeta, at?: { x: number; y: number }) => void;
+  /** Troca a fonte da imagem mantendo posição, rotação, flips e largura visual. */
+  replaceImage: (id: string, meta: ImageMeta) => void;
+  /** Remove elementos de imagem cujo blob não existe mais (após hidratar o IndexedDB). */
+  reconcileImages: (availableIds: Set<string>) => void;
   setLogoSize: (size: LogoSize) => void;
   placeLogo: (place: LogoPlace) => void;
   placeDecoration: (id: string, corner: Corner) => void;
@@ -182,9 +197,17 @@ function sanitize(doc: Doc | undefined): Doc {
   if (!doc) return emptyDoc();
   return {
     backgroundId: getBackground(doc.backgroundId) ? doc.backgroundId : null,
-    elements: (doc.elements ?? []).filter((e) => e.kind !== 'decoration' || getDecoration(e.assetId)),
+    elements: (doc.elements ?? []).filter(
+      (e) =>
+        // Enfeite só fica se o asset do manifest existir.
+        (e.kind !== 'decoration' || getDecoration(e.assetId)) &&
+        // Imagem do usuário só fica com metadados completos (o blob vem do IndexedDB).
+        (e.kind !== 'image' || isPersistedImage(e)),
+    ),
   };
 }
+
+
 
 export const useEditor = create<EditorState>()(
   temporal(
@@ -347,6 +370,57 @@ export const useEditor = create<EditorState>()(
             set({ selectedId: logo.id });
           },
 
+          addImage: (meta, at) => {
+            if (!meta.imageId || !(meta.width > 0) || !(meta.height > 0)) return;
+            const elements = get().doc.elements;
+            if (!hasImageSlots(elements)) {
+              get().showToast('error', 'Tá lotado! Cabem até 5 imagens por post 😅');
+              return;
+            }
+            const pos = at ? clampImageCenter(at.x, at.y) : freeCenter(elements);
+            const el: ImageEl = {
+              id: uid(),
+              kind: 'image',
+              imageId: meta.imageId,
+              name: meta.name,
+              x: pos.x,
+              y: pos.y,
+              rotation: 0,
+              scale: initialImageScale(meta.width, meta.height),
+              flipX: false,
+              flipY: false,
+              width: meta.width,
+              height: meta.height,
+            };
+            setDoc((d) => ({ ...d, elements: [...d.elements, el] }));
+            set({ selectedId: el.id });
+          },
+
+          replaceImage: (id, meta) => {
+            const el = findEl(id);
+            if (!el || el.kind !== 'image' || !(meta.width > 0) || !(meta.height > 0)) return;
+            const cur = el;
+            // Mantém a largura visual da imagem anterior.
+            const scale = cur.width > 0 && meta.width > 0 ? (cur.width * cur.scale) / meta.width : cur.scale;
+            mapEl(id, (e) => ({
+              ...(e as ImageEl),
+              imageId: meta.imageId,
+              name: meta.name,
+              width: meta.width,
+              height: meta.height,
+              scale,
+            }) as El);
+          },
+
+          reconcileImages: (availableIds) => {
+            const ghosts = get().doc.elements.filter(
+              (e): e is ImageEl => e.kind === 'image' && !availableIds.has(e.imageId),
+            );
+            if (ghosts.length === 0) return;
+            const ids = new Set(ghosts.map((g) => g.id));
+            setDoc((d) => ({ ...d, elements: d.elements.filter((e) => !ids.has(e.id)) }));
+          },
+
           placeDecoration: (id, corner) => {
             const el = findEl(id);
             if (!el || el.kind !== 'decoration') return;
@@ -399,6 +473,10 @@ export const useEditor = create<EditorState>()(
             if (!el) return;
             if (el.kind === 'logo') {
               get().showToast('info', 'Só cabe uma logo por post 😉');
+              return;
+            }
+            if (el.kind === 'image' && !hasImageSlots(get().doc.elements)) {
+              get().showToast('error', 'Tá lotado! Cabem até 5 imagens por post 😅');
               return;
             }
             const copy = { ...el, id: uid(), ...freeCenter(get().doc.elements, el.x + 32, el.y + 32) } as El;

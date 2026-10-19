@@ -15,7 +15,7 @@ export const BackgroundStep: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>1. Escolha o fundinho 🌽</h2>
+        <h2 className={styles.title}>1. Escolha o fundo 🌽</h2>
         <p className={styles.description}>
           Selecione a textura da sua arte. O fundo fica sempre perfeitamente encaixado em 3:4.
         </p>

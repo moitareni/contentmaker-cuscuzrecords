@@ -13,6 +13,7 @@ import { exportPost } from './lib/export';
 import { useKeyboardShortcuts } from './lib/shortcuts';
 import { BackgroundStep } from './steps/BackgroundStep';
 import { DecorationStep } from './steps/DecorationStep';
+import { ImageStep } from './steps/ImageStep';
 import { LogoStep } from './steps/LogoStep';
 import { TextStep } from './steps/TextStep';
 import { TextureStep } from './steps/TextureStep';
@@ -85,9 +86,10 @@ export const App: React.FC = () => {
           <div className={styles.stepContent}>
             {step === 0 && <BackgroundStep />}
             {step === 1 && <DecorationStep />}
-            {step === 2 && <TextStep />}
-            {step === 3 && <LogoStep />}
-            {step === 4 && <TextureStep />}
+            {step === 2 && <ImageStep />}
+            {step === 3 && <TextStep />}
+            {step === 4 && <LogoStep />}
+            {step === 5 && <TextureStep />}
           </div>
           <StepFooter />
         </section>

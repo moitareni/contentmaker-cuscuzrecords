@@ -40,7 +40,7 @@ export const TextStep: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>3. Escreve aí 📝</h2>
+        <h2 className={styles.title}>4. Escreve aí 📝</h2>
         <p className={styles.description}>
           Adicione títulos, textos ou caixas de destaque com as fontes e cores da identidade visual.
         </p>

@@ -26,7 +26,7 @@ export const TextureStep: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>5. Textura final ✨</h2>
+        <h2 className={styles.title}>6. Textura final ✨</h2>
         <p className={styles.description}>
           O acabamento da arte. Papel amassado e granulado vêm desligados — ligue, regule e veja na hora.
         </p>

@@ -2,6 +2,7 @@ import confetti from 'canvas-confetti';
 import type Konva from 'konva';
 import { POST_H, POST_W } from '../brand/brand';
 import { ensureFontsLoaded } from './fonts';
+import { ensureUserImagesReady } from './userImages';
 
 export function fireCuteConfetti() {
   confetti({
@@ -31,12 +32,30 @@ export interface ExportOptions {
   stageDisplayWidth: number;
 }
 
+/** `data.userImageId` marcado no Konva Group pela ImageNode. */
+function userImageIdOf(node: Konva.Node): string | undefined {
+  const data = node.getAttr('data') as { userImageId?: string } | undefined;
+  return typeof data?.userImageId === 'string' ? data.userImageId : undefined;
+}
+
+function collectUserImageIds(stage: Konva.Stage): Set<string> {
+  const ids = new Set<string>();
+  const nodes = stage.find((n: Konva.Node) => !!userImageIdOf(n)) as unknown as Konva.Node[];
+  for (const node of nodes) {
+    const id = userImageIdOf(node);
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
 /**
  * Exporta o post em alta resolução (exatamente 1080×1440 PNG)
  * e dispara o download com confete comemorativo.
  */
 export async function exportPost({ stage, stageDisplayWidth }: ExportOptions): Promise<void> {
   await ensureFontsLoaded();
+  // Imagens do usuário podem estar no meio do load esperado pelo Konva.
+  await ensureUserImagesReady(collectUserImageIds(stage));
 
   // O stage renderiza no displayWidth escalado.
   // pixelRatio garante que a saída seja precisamente 1080×1440.

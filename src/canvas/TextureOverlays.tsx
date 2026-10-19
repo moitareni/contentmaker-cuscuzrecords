@@ -11,7 +11,7 @@ export interface TextureOverlaysProps {
 }
 
 /**
- * Acabamento do post (passo 5): papel amassado em multiply + grain
+ * Acabamento do post (passo 6): papel amassado em multiply + grain
  * monocromático em overlay, cobrindo a folha inteira.
  * Nunca intercepta eventos nem entra na seleção — e entra no export
  * porque vive dentro do Layer (diferente das guias, que se escondem).

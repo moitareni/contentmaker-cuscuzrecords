@@ -37,7 +37,19 @@ export interface LogoEl extends BaseEl {
   variant: 'paper' | 'clean';
 }
 
-export type El = DecorationEl | TextEl | LogoEl;
+export interface ImageEl extends BaseEl {
+  kind: 'image';
+  /** Chave do registro no IndexedDB (src/lib/userImages). */
+  imageId: string;
+  name: string;
+  /** Dimensões naturais em px, já no tamanho processado (máx. 3000 no maior lado). */
+  width: number;
+  height: number;
+  flipX: boolean;
+  flipY: boolean;
+}
+
+export type El = DecorationEl | ImageEl | TextEl | LogoEl;
 export type ElKind = El['kind'];
 
 export interface Doc {
@@ -46,10 +58,11 @@ export interface Doc {
   elements: El[];
 }
 
-export type StepId = 0 | 1 | 2 | 3 | 4;
-export const STEP_OF_KIND: Record<ElKind, StepId> = { decoration: 1, text: 2, logo: 3 };
+export type StepId = 0 | 1 | 2 | 3 | 4 | 5;
+export const STEP_OF_KIND: Record<ElKind, StepId> = { decoration: 1, image: 2, text: 3, logo: 4 };
+export const LAST_STEP: StepId = 5;
 
-/** Acabamento do post (passo 5). Fora de `elements`: nunca selecionável. */
+/** Acabamento do post (passo 6). Fora de `elements`: nunca selecionável. */
 export interface PaperFinish {
   enabled: boolean;
   /** Opacidade 0–100. */

@@ -12,9 +12,10 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { id: 0, label: '1. Fundo' },
   { id: 1, label: '2. Enfeites', tag: 'opcional' },
-  { id: 2, label: '3. Texto' },
-  { id: 3, label: '4. Logo', tag: 'opcional' },
-  { id: 4, label: '5. Textura', tag: 'opcional' },
+  { id: 2, label: '3. Imagem', tag: 'opcional' },
+  { id: 3, label: '4. Texto' },
+  { id: 4, label: '5. Logo', tag: 'opcional' },
+  { id: 5, label: '6. Textura', tag: 'opcional' },
 ];
 
 export const Stepper: React.FC = () => {
@@ -26,7 +27,7 @@ export const Stepper: React.FC = () => {
   const handleClick = (id: StepId) => {
     // Não permite avançar sem ter escolhido um fundo inicial
     if (id > 0 && !hasBackground) {
-      showToast('error', 'Ops! Escolha um fundinho primeiro 🌽');
+      showToast('error', 'Ops! Escolha um fundo primeiro 🌽');
       return;
     }
     setStep(id);

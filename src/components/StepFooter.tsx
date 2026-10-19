@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEditor } from '../store/editorStore';
+import { LAST_STEP, type StepId } from '../types';
 import { Button } from './ui/Button';
 import styles from './StepFooter.module.css';
 
@@ -9,14 +10,23 @@ export const StepFooter: React.FC = () => {
   const setStep = useEditor((s) => s.setStep);
   const hasBackground = useEditor((s) => Boolean(s.doc.backgroundId));
   const decorationsCount = useEditor((s) => s.doc.elements.filter((e) => e.kind === 'decoration').length);
+  const imagesCount = useEditor((s) => s.doc.elements.filter((e) => e.kind === 'image').length);
 
   const handlePrev = () => {
-    if (step > 0) setStep((step - 1) as 0 | 1 | 2 | 3 | 4);
+    if (step > 0) setStep((step - 1) as StepId);
   };
 
   const handleNext = () => {
-    if (step < 4) setStep((step + 1) as 0 | 1 | 2 | 3 | 4);
+    if (step < LAST_STEP) setStep((step + 1) as StepId);
   };
+
+  // Etapas opcionais com folha vazia indicam o pulo
+  const nextLabel =
+    step === 1 && decorationsCount === 0
+      ? 'Pular (sem enfeites)'
+      : step === 2 && imagesCount === 0
+        ? 'Pular (sem imagem)'
+        : 'Próximo';
 
   return (
     <footer className={styles.footer}>
@@ -33,18 +43,14 @@ export const StepFooter: React.FC = () => {
         <div />
       )}
 
-      {step < 4 ? (
+      {step < LAST_STEP ? (
         <Button
           variant="primary"
           size="md"
           disabled={step === 0 && !hasBackground}
           onClick={handleNext}
         >
-          <span>
-            {step === 1 && decorationsCount === 0
-              ? 'Pular (sem enfeites)'
-              : 'Próximo'}
-          </span>
+          <span>{nextLabel}</span>
           <ArrowRight size={18} strokeWidth={2.5} />
         </Button>
       ) : (

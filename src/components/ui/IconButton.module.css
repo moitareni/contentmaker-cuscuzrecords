@@ -67,6 +67,18 @@
   box-shadow: inset 0 2px 0 var(--c-border);
 }
 
+/* O hover não pode apagar o estado "ligado": sem isso, o botão de espelhar
+   parece desligado enquanto o mouse está em cima e "acende" só ao sair. */
+.active:hover:not(:disabled) {
+  background-color: var(--c-amarelo);
+  box-shadow: inset 0 2px 0 var(--c-border), var(--shadow-md);
+}
+
+.active:active:not(:disabled) {
+  background-color: var(--c-amarelo);
+  box-shadow: inset 0 2px 0 var(--c-border);
+}
+
 .sm {
   width: 34px;
   height: 34px;

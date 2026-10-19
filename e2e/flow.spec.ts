@@ -36,9 +36,15 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     await expect(blBtn).toBeVisible();
     await blBtn.click();
 
-    // Avança para o Passo 3: Texto
+    // Avança para o Passo 3: Imagem
     await page.locator('footer button:has-text("Próximo")').click();
-    await expect(page.locator('h2')).toContainText('3. Escreve aí');
+    await expect(page.locator('h2')).toContainText('3. Sua imagem');
+
+    // Etapa opcional: pula sem imagem
+    const skipImageBtn = page.locator('footer button:has-text("Pular (sem imagem)")');
+    await expect(skipImageBtn).toBeVisible();
+    await skipImageBtn.click();
+    await expect(page.locator('h2')).toContainText('4. Escreve aí');
 
     // Adiciona um título (Londrina Black)
     await page.locator('button:has-text("+ Título")').click();
@@ -55,9 +61,9 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     const limitLegend = page.locator('text=Máx permitido pelo título:');
     await expect(limitLegend).toBeVisible();
 
-    // Avança para o Passo 4: Logo
+    // Avança para o Passo 5: Logo
     await page.locator('footer button:has-text("Próximo")').click();
-    await expect(page.locator('h2')).toContainText('4. Carimba a logo');
+    await expect(page.locator('h2')).toContainText('5. Carimba a logo');
 
     // Logo é opcional: adiciona com papel
     await page.locator('button:has-text("Adicionar Logo com Papel")').click();
@@ -69,9 +75,9 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     // Posiciona no Centro Inferior
     await page.locator('button:has-text("Centro Inferior")').click();
 
-    // Passo 5: acabamento é opcional e vem desligado por padrão (regra da marca)
+    // Passo 6: acabamento é opcional e vem desligado por padrão (regra da marca)
     await page.locator('footer button:has-text("Próximo")').click();
-    await expect(page.locator('h2')).toContainText('5. Textura');
+    await expect(page.locator('h2')).toContainText('6. Textura');
     await expect(page.locator('button:has-text("Papel (Desligado)")')).toBeVisible();
     await expect(page.locator('button:has-text("Grain (Desligado)")')).toBeVisible();
 

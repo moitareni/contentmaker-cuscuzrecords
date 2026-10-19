@@ -135,6 +135,11 @@ export const LOGO_SIZES = { P: 200, M: 320, G: 460 } as const;
 export type LogoSize = keyof typeof LOGO_SIZES;
 export const LOGO_MARGIN = 56;
 
+/** Imagens do usuário: no máximo 5 por post. */
+export const IMAGE_MAX_COUNT = 5;
+export const IMAGE_MAX_FILE_BYTES = 25 * 1024 * 1024;
+export const IMAGE_MAX_SIDE = 3000;
+
 /**
  * Guias de layout estilo Photoshop (margens + centro + terços).
  * Tudo em px do post 1080×1440. Não entram no export.
@@ -151,7 +156,7 @@ export const GUIDE_COLORS = {
 } as const;
 
 /**
- * Acabamento do post (passo 5: Textura). Tudo desligado por padrão.
+ * Acabamento do post (passo 6: Textura). Tudo desligado por padrão.
  * Papel amassado em multiply + granulado monocromático em overlay.
  */
 /** Texturas (papel e granulado) iniciam desligadas; o usuário liga quando quiser. */

@@ -18,7 +18,7 @@ export const LogoStep: React.FC = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>4. Carimba a logo 🏷️</h2>
+        <h2 className={styles.title}>5. Carimba a logo 🏷️</h2>
         <p className={styles.description}>
           Esta etapa é opcional. Se desejar, insira a assinatura oficial da Cuscuz Records.
         </p>
