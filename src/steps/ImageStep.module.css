@@ -93,3 +93,265 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ------------------------------------------------------ Remover fundo (chip) */
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 3px solid var(--c-verde);
+  border-radius: var(--radius-pill);
+  background-color: var(--c-surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--c-text-main);
+  cursor: pointer;
+  text-align: left;
+}
+
+.chip:hover {
+  background-color: var(--c-surface-muted);
+}
+
+.chipText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------ Remover fundo (painel inline) */
+
+/* O painel substitui o botão no card: nasce no lugar, sem backdrop. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background-color: var(--c-surface-card);
+  padding: 12px;
+  box-shadow: var(--shadow-md);
+  animation: cutePop 0.2s var(--ease-bounce);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panelTitle {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: 17px;
+  color: var(--c-barro);
+}
+
+.panelSub {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--c-text-muted);
+  margin: -4px 0 0;
+  line-height: 1.25;
+}
+
+.panelActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Cartões de modo (Pessoa / Objeto) */
+.modeGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modeCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background-color: var(--c-surface-card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-bounce);
+}
+
+.modeCard:hover {
+  border-color: var(--c-verde);
+  transform: translateY(-1px);
+}
+
+.modeCardLast {
+  border-color: var(--c-amarelo);
+}
+
+.modeIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--c-surface-muted);
+  color: var(--c-text-main);
+}
+
+.modeText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modeLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: 17px;
+  color: var(--c-text-main);
+}
+
+.lastUsedTag {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  border: 2px solid var(--c-amarelo);
+  border-radius: var(--radius-pill);
+  padding: 0 8px;
+  color: var(--c-text-main);
+  background-color: var(--c-surface);
+}
+
+.modeHint {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--c-text-muted);
+  line-height: 1.25;
+}
+
+.note {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--c-text-muted);
+  background-color: var(--c-surface-muted);
+  border: 2px dashed var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+/* Progresso do download / processamento */
+.progressBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+
+.progressIcon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 3px solid var(--c-border);
+  border-radius: 50%;
+  background-color: var(--c-surface-muted);
+  color: var(--c-verde);
+}
+
+.progressTitle {
+  font-family: var(--font-headline);
+  font-weight: 900;
+  font-size: 17px;
+  color: var(--c-text-main);
+}
+
+.progressHint {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+
+.progressTrack {
+  width: 100%;
+  height: 16px;
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-pill);
+  background-color: var(--c-surface-muted);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--c-verde);
+  border-radius: var(--radius-pill);
+  transition: width 0.25s ease;
+}
+
+.progressLabel {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--c-text-main);
+}
+
+/* Spinner (chip, botões e diálogo) */
+.spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--c-border);
+  border-top-color: var(--c-verde);
+  animation: bgSpin 0.8s linear infinite;
+}
+
+.buttonSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid rgba(11, 5, 0, 0.25);
+  border-top-color: var(--c-barro);
+  animation: bgSpin 0.8s linear infinite;
+}
+
+@keyframes bgSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .buttonSpinner,
+  .panel,
+  .progressFill,
+  .modeCard {
+    animation: none;
+    transition: none;
+  }
+}

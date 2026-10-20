@@ -16,6 +16,7 @@
   "dependencies": {
     "@fontsource/londrina-solid": "^5.1.0",
     "@fontsource/pt-sans-narrow": "^5.1.0",
+    "@huggingface/transformers": "^4.3.1",
     "canvas-confetti": "^1.9.3",
     "konva": "^9.3.18",
     "lucide-react": "^0.460.0",

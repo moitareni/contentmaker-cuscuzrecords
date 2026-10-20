@@ -186,6 +186,55 @@ export interface ImportedImage {
 }
 
 /**
+ * Registra uma imagem já processada (ex.: recorte sem fundo) sem passar pela
+ * validação de arquivo: gera a miniatura, grava no IndexedDB e alimenta o
+ * registry com as URLs para o canvas.
+ */
+export async function registerProcessedImage(
+  blob: Blob,
+  name: string,
+  width: number,
+  height: number,
+): Promise<ImportedImage> {
+  if (!blob.type.startsWith('image/')) throw new Error('encode');
+  const decoded = await decodeImageSource(blob);
+  let result: ImportedImage;
+  try {
+    const thumbDims = downscaleDimensions(decoded.width, decoded.height, IMAGE_THUMB_SIDE);
+    const thumb = await renderToBlob(decoded.source, thumbDims.width, thumbDims.height);
+
+    const entry: UserImageEntry = {
+      id: uid(),
+      name,
+      url: URL.createObjectURL(blob),
+      thumbUrl: URL.createObjectURL(thumb),
+      width,
+      height,
+    };
+
+    let persisted = true;
+    try {
+      await putStored({
+        id: entry.id,
+        blob,
+        thumb,
+        name: entry.name,
+        width,
+        height,
+        createdAt: Date.now(),
+      });
+    } catch {
+      persisted = false;
+    }
+    addEntry(entry, persisted);
+    result = { entry, persisted };
+  } finally {
+    decoded.close();
+  }
+  return result;
+}
+
+/**
  * Fluxo completo de importação: valida, decodifica, redimensiona, encoda,
  * grava no IndexedDB e registra as URLs para o canvas.
  */
@@ -282,7 +331,7 @@ function drawToCanvas(source: CanvasImageSource, width: number, height: number):
   return canvas;
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
+export function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('encode'))),

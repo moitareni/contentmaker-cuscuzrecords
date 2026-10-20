@@ -27,7 +27,10 @@ import { getBackground, getDecoration, getLogo } from '../assets';
 import { clampTextSize } from '../lib/textRules';
 import { clampZoom } from '../lib/zoom';
 import { clampImageCenter, hasImageSlots, initialImageScale, isPersistedImage } from '../lib/imageRules';
-import { STEP_OF_KIND, type Doc, type El, type FinishState, type GrainFinish, type ImageEl, type LogoEl, type PaperFinish, type StepId, type TextEl } from '../types';
+import { STEP_OF_KIND, type Doc, type El, type FinishState, type GrainFinish, type ImageEl, type ImageMeta, type LogoEl, type PaperFinish, type StepId, type TextEl } from '../types';
+
+/** Metadados de uma imagem importada (o blob vive no userImages/IndexedDB). */
+export type { ImageMeta };
 
 export interface Toast {
   id: number;
@@ -37,14 +40,6 @@ export interface Toast {
 
 export type Corner = 'tl' | 'tr' | 'bl' | 'br';
 export type LogoPlace = Corner | 'tc' | 'bc' | 'center';
-
-/** Metadados de uma imagem importada (o blob vive no userImages/IndexedDB). */
-export interface ImageMeta {
-  imageId: string;
-  name: string;
-  width: number;
-  height: number;
-}
 
 /** Guias de layout (Photoshop-like). Visibilidade fora do doc: nunca persiste nem entra no undo. */
 export interface LayoutGuides {
@@ -119,8 +114,9 @@ export interface EditorState {
   addLogo: (variant: LogoEl['variant']) => void;
   /** Adiciona imagem do usuário (limite de 5). `at` = centro do drop na folha. */
   addImage: (meta: ImageMeta, at?: { x: number; y: number }) => void;
-  /** Troca a fonte da imagem mantendo posição, rotação, flips e largura visual. */
-  replaceImage: (id: string, meta: ImageMeta) => void;
+  /** Troca a fonte da imagem mantendo posição, rotação, flips e largura visual.
+   *  `restore` guarda a imagem anterior p/ o botão "Reverter fundo"; omitir limpa. */
+  replaceImage: (id: string, meta: ImageMeta, restore?: ImageMeta) => void;
   /** Remove elementos de imagem cujo blob não existe mais (após hidratar o IndexedDB). */
   reconcileImages: (availableIds: Set<string>) => void;
   setLogoSize: (size: LogoSize) => void;
@@ -396,20 +392,25 @@ export const useEditor = create<EditorState>()(
             set({ selectedId: el.id });
           },
 
-          replaceImage: (id, meta) => {
+          replaceImage: (id, meta, restore) => {
             const el = findEl(id);
             if (!el || el.kind !== 'image' || !(meta.width > 0) || !(meta.height > 0)) return;
             const cur = el;
             // Mantém a largura visual da imagem anterior.
             const scale = cur.width > 0 && meta.width > 0 ? (cur.width * cur.scale) / meta.width : cur.scale;
-            mapEl(id, (e) => ({
-              ...(e as ImageEl),
-              imageId: meta.imageId,
-              name: meta.name,
-              width: meta.width,
-              height: meta.height,
-              scale,
-            }) as El);
+            mapEl(id, (e) => {
+              const next: ImageEl = {
+                ...(e as ImageEl),
+                imageId: meta.imageId,
+                name: meta.name,
+                width: meta.width,
+                height: meta.height,
+                scale,
+              };
+              if (restore) next.cutFrom = restore;
+              else delete next.cutFrom;
+              return next as El;
+            });
           },
 
           reconcileImages: (availableIds) => {

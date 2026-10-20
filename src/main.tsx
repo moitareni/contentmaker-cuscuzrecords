@@ -23,8 +23,13 @@ const bootImageIds = new Set(
 void hydrateUserImages().then((availableIds) => {
   const st = useEditor.getState();
   st.reconcileImages(new Set([...bootImageIds].filter((id) => availableIds.has(id))));
-  void collectGarbageImages(
-    new Set(st.doc.elements.filter((e) => e.kind === 'image').map((e) => e.imageId)),
-  );
+  // O GC preserva também as originais de recortes ("Reverter fundo" precisa delas).
+  const keep = new Set<string>();
+  for (const e of st.doc.elements) {
+    if (e.kind !== 'image') continue;
+    keep.add(e.imageId);
+    if (e.cutFrom) keep.add(e.cutFrom.imageId);
+  }
+  void collectGarbageImages(keep);
   useEditor.temporal.getState().clear();
 });

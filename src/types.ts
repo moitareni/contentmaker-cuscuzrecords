@@ -47,6 +47,19 @@ export interface ImageEl extends BaseEl {
   height: number;
   flipX: boolean;
   flipY: boolean;
+  /**
+   * Imagem anterior ao recorte sem fundo — alimenta o botão "Reverter fundo".
+   * Vai no doc (persiste) e precisa ser considerada pelo GC do IndexedDB.
+   */
+  cutFrom?: ImageMeta;
+}
+
+/** Metadados de uma imagem do usuário (o binário vive no IndexedDB). */
+export interface ImageMeta {
+  imageId: string;
+  name: string;
+  width: number;
+  height: number;
 }
 
 export type El = DecorationEl | ImageEl | TextEl | LogoEl;

@@ -15,8 +15,8 @@
 }
 
 .sidebar {
-  width: 380px;
-  min-width: 340px;
+  width: 404px;
+  min-width: 360px;
   max-width: 420px;
   background-color: var(--c-surface-card);
   border-right: 3px solid var(--c-border);
