@@ -3,7 +3,6 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
-  AppWindow,
   Heading,
   Sparkles,
   Trash2,
@@ -23,8 +22,6 @@ import styles from './StepPanel.module.css';
 
 export const TextStep: React.FC = () => {
   const addText = useEditor((s) => s.addText);
-  const addDecoration = useEditor((s) => s.addDecoration);
-  const showToast = useEditor((s) => s.showToast);
   const updateElement = useEditor((s) => s.updateElement);
   const removeElement = useEditor((s) => s.removeElement);
   const select = useEditor((s) => s.select);
@@ -78,18 +75,6 @@ export const TextStep: React.FC = () => {
             onClick={() => addText('highlight')}
           >
             + Destaque (com efeito)
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="md"
-            icon={<AppWindow size={18} strokeWidth={2.5} />}
-            onClick={() => {
-              addDecoration('janela');
-              showToast('info', 'Moldura Janela adicionada! Escreva seu texto dentro dela 📝');
-            }}
-          >
-            + Moldura Janela (Windows)
           </Button>
         </div>
       </div>

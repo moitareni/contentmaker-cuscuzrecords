@@ -52,7 +52,7 @@ Quando o "Efeito da Marca" está ativo em títulos:
 - **Enfeites e Grafismos são opcionais**: o usuário pode adicionar quantos desejar ou nenhum.
   - **Enfeites de fundo**: florais, folhas, ondas e acabamentos da pasta `ENFEITE/` (incluindo `grade` com modo `soft-light` e `sobrepor` cobrindo a folha).
   - **Grafismos**: elementos da pasta `GRAFISMOS/` (`chain`, `esqueleto`, `mp3player`, e `papel-divisao` com modo de mesclagem `divide`).
-  - **Molduras**: moldura retrô da pasta `JANELA/`, disponível no Passo 2 e também como atalho nos Passos 3 (Imagem) e 4 (Texto) para emoldurar fotos e composições.
+  - **Molduras**: moldura retrô da pasta `JANELA/`, disponível no Passo 2 para emoldurar fotos e composições.
 - **Logo é opcional**: só aparece se o usuário decidir adicionar. Apenas uma logo é permitida por post, podendo alternar entre "Com papel" e "Sem fundo".
 
 ### 2.8 Textura Final (opcional, desligada por padrão)
