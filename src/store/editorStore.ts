@@ -134,6 +134,8 @@ export interface EditorState {
   setFitWidth: (width: number) => void;
 
   setBackground: (id: string) => void;
+  toggleBackgroundFlipX: () => void;
+  toggleBackgroundFlipY: () => void;
   addDecoration: (assetId: string) => void;
   addText: (style: TextStyle) => void;
   addLogo: (variant: LogoEl['variant']) => void;
@@ -158,7 +160,12 @@ export interface EditorState {
   reset: () => void;
 }
 
-const emptyDoc = (): Doc => ({ backgroundId: null, elements: [] });
+const emptyDoc = (): Doc => ({
+  backgroundId: null,
+  backgroundFlipX: false,
+  backgroundFlipY: false,
+  elements: [],
+});
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 /** Evita empilhar elementos novos exatamente no mesmo ponto. */
@@ -218,6 +225,8 @@ function sanitize(doc: Doc | undefined): Doc {
   if (!doc) return emptyDoc();
   return {
     backgroundId: getBackground(doc.backgroundId) ? doc.backgroundId : null,
+    backgroundFlipX: Boolean(doc.backgroundFlipX),
+    backgroundFlipY: Boolean(doc.backgroundFlipY),
     elements: (doc.elements ?? []).filter(
       (e) =>
         // Enfeite só fica se o asset do manifest existir.
@@ -338,6 +347,10 @@ export const useEditor = create<EditorState>()(
             })),
 
           setBackground: (id) => setDoc((d) => ({ ...d, backgroundId: id })),
+          toggleBackgroundFlipX: () =>
+            setDoc((d) => ({ ...d, backgroundFlipX: !d.backgroundFlipX })),
+          toggleBackgroundFlipY: () =>
+            setDoc((d) => ({ ...d, backgroundFlipY: !d.backgroundFlipY })),
 
           addDecoration: (assetId) => {
             const asset = getDecoration(assetId);

@@ -970,7 +970,11 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                 que a folha para as alças do Transformer aparecerem fora dela) */}
             <Group clipX={0} clipY={0} clipWidth={POST_W} clipHeight={POST_H}>
             {/* Fundo 3:4 Fixo e Travado */}
-            <BackgroundNode backgroundId={doc.backgroundId} />
+            <BackgroundNode
+              backgroundId={doc.backgroundId}
+              flipX={doc.backgroundFlipX}
+              flipY={doc.backgroundFlipY}
+            />
 
             {/* Elementos em ordem de camada */}
             {doc.elements.map((el) => {

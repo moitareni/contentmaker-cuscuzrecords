@@ -15,7 +15,7 @@ O objetivo é permitir que o cliente crie de forma prática, rápida e intuitiva
 
 ### 2.1 Formato e Fundo
 - **Formato fixo**: sempre **3:4** (resolução padrão de exportação: **1080×1440 px**).
-- **Fundo travado**: o fundo cobre a folha inteira e **nunca** pode ser deslocado pelo usuário para evitar bordas vazias.
+- **Fundo travado**: o fundo cobre a folha inteira e **nunca** pode ser deslocado pelo usuário para evitar bordas vazias. Pode ser espelhado horizontalmente (`↔`) e verticalmente (`↕`) pelo usuário no Passo 1, pivotado perfeitamente no centro (1080×1440) sem vazar margens.
 
 ### 2.2 Paleta de Cores Oficial
 Somente as seguintes cores podem ser utilizadas na arte e nos textos:

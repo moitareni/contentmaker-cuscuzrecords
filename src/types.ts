@@ -67,6 +67,8 @@ export type ElKind = El['kind'];
 
 export interface Doc {
   backgroundId: string | null;
+  backgroundFlipX?: boolean;
+  backgroundFlipY?: boolean;
   /** Ordem do array = ordem das camadas (último fica por cima). */
   elements: El[];
 }

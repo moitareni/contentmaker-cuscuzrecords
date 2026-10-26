@@ -16,6 +16,14 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     await firstBg.click();
     await expect(nextBtn).toBeEnabled();
 
+    // Testa as opções de espelhamento do fundo
+    const flipHBtn = page.locator('button:has-text("Espelhar ↔")');
+    const flipVBtn = page.locator('button:has-text("Espelhar ↕")');
+    await expect(flipHBtn).toBeVisible();
+    await expect(flipVBtn).toBeVisible();
+    await flipHBtn.click();
+    await flipVBtn.click();
+
     // Avança para o Passo 2: Enfeites
     await nextBtn.click();
     await expect(page.locator('h2')).toContainText('2. Enfeita aí!');
