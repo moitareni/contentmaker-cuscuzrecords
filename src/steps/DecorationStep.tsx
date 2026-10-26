@@ -1,11 +1,12 @@
 import React from 'react';
 import { FlipHorizontal, FlipVertical, Trash2 } from 'lucide-react';
-import { getDecoration, manifest } from '../assets';
+import { decorationsOf, getDecoration } from '../assets';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { IconButton } from '../components/ui/IconButton';
 import { ThumbGrid } from '../components/ui/ThumbGrid';
 import { useEditor, useSelected } from '../store/editorStore';
+import { POST_H, POST_W } from '../brand/brand';
 import type { DecorationEl } from '../types';
 import styles from './StepPanel.module.css';
 
@@ -19,61 +20,114 @@ export const DecorationStep: React.FC = () => {
 
   const selected = useSelected();
   const selectedDeco = selected && selected.kind === 'decoration' ? (selected as DecorationEl) : null;
+  const selectedAsset = selectedDeco ? getDecoration(selectedDeco.assetId) : null;
 
   const currentDecorations = elements.filter((e): e is DecorationEl => e.kind === 'decoration');
+  const enfeites = decorationsOf('enfeite');
+  const grafismos = decorationsOf('grafismo');
+  const molduras = decorationsOf('janela');
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>2. Enfeita aí! ✨</h2>
         <p className={styles.description}>
-          Esta etapa é opcional. Toque em um enfeite para adicionar à folha e movimente livremente.
+          Esta etapa é opcional. Toque em um enfeite ou grafismo para adicionar à folha e movimente livremente.
         </p>
       </div>
 
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Enfeites da Marca</h3>
+        <h3 className={styles.sectionTitle}>Enfeites de fundo</h3>
         <ThumbGrid
-          items={manifest.decorations}
+          items={enfeites}
           aspectRatio="1-1"
           columns={3}
           onSelect={(id) => addDecoration(id)}
         />
       </div>
 
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Grafismos</h3>
+        <ThumbGrid
+          items={grafismos}
+          aspectRatio="1-1"
+          columns={3}
+          onSelect={(id) => addDecoration(id)}
+        />
+      </div>
+
+      {molduras.length > 0 && (
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Molduras</h3>
+          <ThumbGrid
+            items={molduras}
+            aspectRatio="1-1"
+            columns={3}
+            onSelect={(id) => addDecoration(id)}
+          />
+        </div>
+      )}
+
       {/* Opções para o enfeite atualmente selecionado */}
       {selectedDeco && (
-        <Card title="Posicionamento Rápido" subtitle="Encaixe nos cantos com espelhamento automático">
-          <div className={styles.buttonGrid}>
+        <Card
+          title={selectedAsset?.label ? `Opções de ${selectedAsset.label}` : 'Opções do Enfeite'}
+          subtitle={
+            selectedAsset?.fullSheet
+              ? 'Cobre a folha inteira 1080×1440'
+              : 'Encaixe nos cantos com espelhamento automático'
+          }
+        >
+          {selectedAsset?.fullSheet ? (
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => placeDecoration(selectedDeco.id, 'tl')}
+              fullWidth
+              onClick={() =>
+                updateElement(selectedDeco.id, {
+                  x: POST_W / 2,
+                  y: POST_H / 2,
+                  rotation: 0,
+                  scale: 1,
+                  flipX: false,
+                  flipY: false,
+                })
+              }
             >
-              Superior Esq.
+              Centralizar na folha
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => placeDecoration(selectedDeco.id, 'tr')}
-            >
-              Superior Dir.
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => placeDecoration(selectedDeco.id, 'bl')}
-            >
-              Inferior Esq.
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => placeDecoration(selectedDeco.id, 'br')}
-            >
-              Inferior Dir.
-            </Button>
-          </div>
+          ) : (
+            <div className={styles.buttonGrid}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => placeDecoration(selectedDeco.id, 'tl')}
+              >
+                Superior Esq.
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => placeDecoration(selectedDeco.id, 'tr')}
+              >
+                Superior Dir.
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => placeDecoration(selectedDeco.id, 'bl')}
+              >
+                Inferior Esq.
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => placeDecoration(selectedDeco.id, 'br')}
+              >
+                Inferior Dir.
+              </Button>
+            </div>
+          )}
 
           <div className={styles.row} style={{ marginTop: '8px' }}>
             <Button

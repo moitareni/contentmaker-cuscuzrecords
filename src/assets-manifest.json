@@ -32,6 +32,24 @@
       "thumb": "/brand/thumbs/bg-pronto-3.webp"
     },
     {
+      "id": "pronto-4",
+      "category": "pronto",
+      "label": "Pronto 4",
+      "src": "/brand/bg-pronto-4.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-pronto-4.webp"
+    },
+    {
+      "id": "pronto-5",
+      "category": "pronto",
+      "label": "Pronto 5",
+      "src": "/brand/bg-pronto-5.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-pronto-5.webp"
+    },
+    {
       "id": "puro-1",
       "category": "puro",
       "label": "Puro 1",
@@ -57,11 +75,30 @@
       "width": 1080,
       "height": 1440,
       "thumb": "/brand/thumbs/bg-puro-3.webp"
+    },
+    {
+      "id": "puro-4",
+      "category": "puro",
+      "label": "Puro 4",
+      "src": "/brand/bg-puro-4.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-puro-4.webp"
+    },
+    {
+      "id": "puro-5",
+      "category": "puro",
+      "label": "Puro 5",
+      "src": "/brand/bg-puro-5.webp",
+      "width": 1079,
+      "height": 1440,
+      "thumb": "/brand/thumbs/bg-puro-5.webp"
     }
   ],
   "decorations": [
     {
       "id": "flores",
+      "category": "enfeite",
       "label": "Flores",
       "src": "/brand/deco-flores.webp",
       "width": 357,
@@ -70,6 +107,7 @@
     },
     {
       "id": "folhas-1",
+      "category": "enfeite",
       "label": "Folhas 1",
       "src": "/brand/deco-folhas-1.webp",
       "width": 152,
@@ -78,6 +116,7 @@
     },
     {
       "id": "folhas-2",
+      "category": "enfeite",
       "label": "Folhas 2",
       "src": "/brand/deco-folhas-2.webp",
       "width": 153,
@@ -86,6 +125,7 @@
     },
     {
       "id": "ondas-1",
+      "category": "enfeite",
       "label": "Ondas 1",
       "src": "/brand/deco-ondas-1.webp",
       "width": 618,
@@ -94,11 +134,79 @@
     },
     {
       "id": "ondas-2",
+      "category": "enfeite",
       "label": "Ondas 2",
       "src": "/brand/deco-ondas-2.webp",
       "width": 1072,
       "height": 100,
       "thumb": "/brand/thumbs/deco-ondas-2.webp"
+    },
+    {
+      "id": "grade",
+      "category": "enfeite",
+      "label": "Grade",
+      "blend": "soft-light",
+      "fullSheet": true,
+      "src": "/brand/deco-grade.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/deco-grade.webp"
+    },
+    {
+      "id": "sobrepor",
+      "category": "enfeite",
+      "label": "Sobrepor",
+      "fullSheet": true,
+      "src": "/brand/deco-sobrepor.webp",
+      "width": 1080,
+      "height": 1440,
+      "thumb": "/brand/thumbs/deco-sobrepor.webp"
+    },
+    {
+      "id": "chain",
+      "category": "grafismo",
+      "label": "CHAIN",
+      "src": "/brand/deco-chain.webp",
+      "width": 1041,
+      "height": 210,
+      "thumb": "/brand/thumbs/deco-chain.webp"
+    },
+    {
+      "id": "esqueleto",
+      "category": "grafismo",
+      "label": "ESQUELETO",
+      "src": "/brand/deco-esqueleto.webp",
+      "width": 679,
+      "height": 668,
+      "thumb": "/brand/thumbs/deco-esqueleto.webp"
+    },
+    {
+      "id": "mp3player",
+      "category": "grafismo",
+      "label": "MP3PLAYER",
+      "src": "/brand/deco-mp3player.webp",
+      "width": 617,
+      "height": 691,
+      "thumb": "/brand/thumbs/deco-mp3player.webp"
+    },
+    {
+      "id": "papel-divisao",
+      "category": "grafismo",
+      "label": "Papel divisão",
+      "blend": "divide",
+      "src": "/brand/deco-papel-divisao.webp",
+      "width": 470,
+      "height": 1099,
+      "thumb": "/brand/thumbs/deco-papel-divisao.webp"
+    },
+    {
+      "id": "janela",
+      "category": "janela",
+      "label": "Janela",
+      "src": "/brand/deco-janela.webp",
+      "width": 896,
+      "height": 769,
+      "thumb": "/brand/thumbs/deco-janela.webp"
     }
   ],
   "logos": [

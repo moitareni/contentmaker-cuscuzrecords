@@ -87,9 +87,15 @@ export interface GrainFinish {
   intensity: number;
   size: GrainSize;
 }
+export interface BorderTextureFinish {
+  enabled: boolean;
+  /** Opacidade 0–100. */
+  opacity: number;
+}
 export interface FinishState {
   paper: PaperFinish;
   grain: GrainFinish;
+  borderTexture: BorderTextureFinish;
 }
 
 export type AlignMode = 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom';

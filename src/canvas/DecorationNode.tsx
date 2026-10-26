@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Group as KonvaGroup, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
-import { getDecoration } from '../assets';
+import { canvasBlendOf, getDecoration } from '../assets';
 import { useImage } from '../lib/useImage';
 import type { DecorationEl } from '../types';
 
@@ -40,6 +40,7 @@ export const DecorationNode: React.FC<DecorationNodeProps> = ({
 
   const width = asset.width;
   const height = asset.height;
+  const blendOp = canvasBlendOf(asset.blend);
 
   return (
     <KonvaGroup
@@ -87,6 +88,7 @@ export const DecorationNode: React.FC<DecorationNodeProps> = ({
         offsetY={height / 2}
         scaleX={element.flipX ? -1 : 1}
         scaleY={element.flipY ? -1 : 1}
+        globalCompositeOperation={blendOp}
       />
     </KonvaGroup>
   );

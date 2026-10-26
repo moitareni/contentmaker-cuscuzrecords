@@ -19,6 +19,8 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     // Avança para o Passo 2: Enfeites
     await nextBtn.click();
     await expect(page.locator('h2')).toContainText('2. Enfeita aí!');
+    await expect(page.locator('text=Enfeites de fundo')).toBeVisible();
+    await expect(page.locator('text=Grafismos')).toBeVisible();
 
     // Como nenhum enfeite foi adicionado ainda, o botão deve indicar que é opcional
     const skipBtn = page.locator('footer button:has-text("Pular (sem enfeites)")');
@@ -79,12 +81,15 @@ test.describe('Cuscuz Records Insta Kit - Fluxo Completo', () => {
     await page.locator('footer button:has-text("Próximo")').click();
     await expect(page.locator('h2')).toContainText('6. Textura');
     await expect(page.locator('button:has-text("Papel (Desligado)")')).toBeVisible();
+    await expect(page.locator('button:has-text("Borda (Desligado)")')).toBeVisible();
     await expect(page.locator('button:has-text("Grain (Desligado)")')).toBeVisible();
 
-    // Liga o acabamento recomendado (papel + grain) antes de exportar
+    // Liga o acabamento recomendado (papel + borda + grain) antes de exportar
     await page.locator('button:has-text("Papel (Desligado)")').click();
+    await page.locator('button:has-text("Borda (Desligado)")').click();
     await page.locator('button:has-text("Grain (Desligado)")').click();
     await expect(page.locator('button:has-text("Papel (Ligado)")')).toBeVisible();
+    await expect(page.locator('button:has-text("Borda (Ligado)")')).toBeVisible();
     await expect(page.locator('button:has-text("Grain (Ligado)")')).toBeVisible();
 
     // Dispara a exportação e captura o download (botão único no dock lateral)

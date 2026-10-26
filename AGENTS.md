@@ -48,15 +48,19 @@ Quando o "Efeito da Marca" está ativo em títulos:
   > *"Opa! O texto não pode ficar maior que o título 🙈"*
 - Da mesma forma, títulos não podem ser encolhidos abaixo do maior texto existente.
 
-### 2.7 Logo e Enfeites
-- **Enfeites são opcionais**: o usuário pode adicionar quantos desejar ou nenhum.
+### 2.7 Logo e Enfeites / Grafismos
+- **Enfeites e Grafismos são opcionais**: o usuário pode adicionar quantos desejar ou nenhum.
+  - **Enfeites de fundo**: florais, folhas, ondas e acabamentos da pasta `ENFEITE/` (incluindo `grade` com modo `soft-light` e `sobrepor` cobrindo a folha).
+  - **Grafismos**: elementos da pasta `GRAFISMOS/` (`chain`, `esqueleto`, `mp3player`, e `papel-divisao` com modo de mesclagem `divide`).
+  - **Molduras**: moldura retrô da pasta `JANELA/`, disponível no Passo 2 e também como atalho nos Passos 3 (Imagem) e 4 (Texto) para emoldurar fotos e composições.
 - **Logo é opcional**: só aparece se o usuário decidir adicionar. Apenas uma logo é permitida por post, podendo alternar entre "Com papel" e "Sem fundo".
 
 ### 2.8 Textura Final (opcional, desligada por padrão)
-- Etapa **6. Textura** com dois acabamentos independentes:
+- Etapa **6. Textura** com três acabamentos independentes:
   - **Papel amassado**: overlay da textura `TEXTURE/` (`public/brand/papel-textura.webp`) sobre a folha, com opacidade regulável (sugestão: 40%).
+  - **Textura de borda**: overlay da textura `BORDER/TEXTURA-BORDA.png` (`public/brand/textura-borda.webp`) sobre a folha, com opacidade regulável (sugestão: 40%).
   - **Granulado**: grão monocromático com distribuição gaussiana, gerado por RNG **com seed** (`mulberry32`) para o grão ficar **idêntico no preview e no export**.
-- Ambos vêm checagem desligada; nunca devem ser aplicados automaticamente na criação de um post.
+- Todos vêm com checagem desligada; nunca devem ser aplicados automaticamente na criação de um post.
 
 ### 2.9 Imagens do Usuário (etapa 3, opcional)
 - **Limite total: até `IMAGE_MAX_COUNT` (5) imagens por post**, contando duplicatas; a 6ª é bloqueada com toast amigável.

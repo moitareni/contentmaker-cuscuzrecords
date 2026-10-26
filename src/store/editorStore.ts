@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import {
+  BORDER_TEXTURE_OPACITY_DEFAULT,
+  BORDER_TEXTURE_OPACITY_MAX,
+  BORDER_TEXTURE_OPACITY_MIN,
   DECORATION_ANCHORS,
   FINISH_ENABLED_DEFAULT,
   GRAIN_INTENSITY_MAX,
@@ -27,7 +30,20 @@ import { getBackground, getDecoration, getLogo } from '../assets';
 import { clampTextSize } from '../lib/textRules';
 import { clampZoom } from '../lib/zoom';
 import { clampImageCenter, hasImageSlots, initialImageScale, isPersistedImage } from '../lib/imageRules';
-import { STEP_OF_KIND, type Doc, type El, type FinishState, type GrainFinish, type ImageEl, type ImageMeta, type LogoEl, type PaperFinish, type StepId, type TextEl } from '../types';
+import {
+  STEP_OF_KIND,
+  type BorderTextureFinish,
+  type Doc,
+  type El,
+  type FinishState,
+  type GrainFinish,
+  type ImageEl,
+  type ImageMeta,
+  type LogoEl,
+  type PaperFinish,
+  type StepId,
+  type TextEl,
+} from '../types';
 
 /** Metadados de uma imagem importada (o blob vive no userImages/IndexedDB). */
 export type { ImageMeta };
@@ -56,6 +72,7 @@ const clampInt = (v: number, min: number, max: number) =>
 const defaultFinish = (): FinishState => ({
   paper: { enabled: FINISH_ENABLED_DEFAULT, opacity: PAPER_OPACITY_DEFAULT },
   grain: { enabled: FINISH_ENABLED_DEFAULT, intensity: GRAIN_INTENSITY_DEFAULT, size: GRAIN_SIZE_DEFAULT },
+  borderTexture: { enabled: FINISH_ENABLED_DEFAULT, opacity: BORDER_TEXTURE_OPACITY_DEFAULT },
 });
 
 /** Valida o acabamento restaurado (rascunho antigo ou corrompido). */
@@ -71,6 +88,13 @@ function sanitizeFinish(f: FinishState | undefined): FinishState {
       enabled: f.grain?.enabled === true,
       intensity: typeof f.grain?.intensity === 'number' ? clampInt(f.grain.intensity, GRAIN_INTENSITY_MIN, GRAIN_INTENSITY_MAX) : d.grain.intensity,
       size: f.grain?.size && f.grain.size in GRAIN_SIZES ? f.grain.size : d.grain.size,
+    },
+    borderTexture: {
+      enabled: f.borderTexture?.enabled === true,
+      opacity:
+        typeof f.borderTexture?.opacity === 'number'
+          ? clampInt(f.borderTexture.opacity, BORDER_TEXTURE_OPACITY_MIN, BORDER_TEXTURE_OPACITY_MAX)
+          : d.borderTexture.opacity,
     },
   };
 }
@@ -102,7 +126,8 @@ export interface EditorState {
   setGuidesVisible: (visible: boolean) => void;
   setPaper: (patch: Partial<PaperFinish>) => void;
   setGrain: (patch: Partial<GrainFinish>) => void;
-  /** Volta ao acabamento padrão (papel e granulado desligados). */
+  setBorderTexture: (patch: Partial<BorderTextureFinish>) => void;
+  /** Volta ao acabamento padrão (papel, granulado e textura de borda desligados). */
   resetFinish: () => void;
   /** Define o zoom prendendo nos limites 25%–400%. */
   setZoom: (factor: number) => void;
@@ -298,12 +323,28 @@ export const useEditor = create<EditorState>()(
                 },
               },
             })),
+          setBorderTexture: (patch) =>
+            set((s) => ({
+              finish: {
+                ...s.finish,
+                borderTexture: {
+                  enabled: patch.enabled ?? s.finish.borderTexture.enabled,
+                  opacity:
+                    patch.opacity === undefined
+                      ? s.finish.borderTexture.opacity
+                      : clampInt(patch.opacity, BORDER_TEXTURE_OPACITY_MIN, BORDER_TEXTURE_OPACITY_MAX),
+                },
+              },
+            })),
 
           setBackground: (id) => setDoc((d) => ({ ...d, backgroundId: id })),
 
           addDecoration: (assetId) => {
-            if (!getDecoration(assetId)) return;
-            const pos = freeCenter(get().doc.elements);
+            const asset = getDecoration(assetId);
+            if (!asset) return;
+            const pos = asset.fullSheet
+              ? { x: POST_W / 2, y: POST_H / 2 }
+              : freeCenter(get().doc.elements);
             const el: El = { id: uid(), kind: 'decoration', assetId, ...pos, rotation: 0, scale: 1, flipX: false, flipY: false };
             setDoc((d) => ({ ...d, elements: [...d.elements, el] }));
             set({ selectedId: el.id });

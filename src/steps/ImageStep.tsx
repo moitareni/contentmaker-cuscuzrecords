@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  AppWindow,
   BringToFront,
   Eraser,
   FlipHorizontal,
@@ -586,6 +587,18 @@ export const ImageStep: React.FC = () => {
           hidden
           onChange={(e) => void pickReplacement(e.target.files)}
         />
+        <Button
+          variant="secondary"
+          size="sm"
+          fullWidth
+          icon={<AppWindow size={16} strokeWidth={2.5} />}
+          onClick={() => {
+            useEditor.getState().addDecoration('janela');
+            useEditor.getState().showToast('info', 'Moldura Janela adicionada! Encaixe sobre sua foto 🌽');
+          }}
+        >
+          + Moldura Janela (Windows)
+        </Button>
       </div>
 
       {/* Card da imagem selecionada: transformações + troca + recorte + camadas */}

@@ -1,6 +1,8 @@
 import React from 'react';
-import { Layers, Newspaper } from 'lucide-react';
+import { Frame, Layers, Newspaper } from 'lucide-react';
 import {
+  BORDER_TEXTURE_OPACITY_MAX,
+  BORDER_TEXTURE_OPACITY_MIN,
   GRAIN_INTENSITY_MAX,
   GRAIN_INTENSITY_MIN,
   GRAIN_SIZES,
@@ -8,7 +10,7 @@ import {
   PAPER_OPACITY_MIN,
   type GrainSize,
 } from '../brand/brand';
-import { getPaperTexture } from '../assets';
+import { getBorderTexture, getPaperTexture } from '../assets';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Segmented } from '../components/ui/Segmented';
@@ -19,16 +21,18 @@ import styles from './StepPanel.module.css';
 export const TextureStep: React.FC = () => {
   const finish = useEditor((s) => s.finish);
   const setPaper = useEditor((s) => s.setPaper);
+  const setBorderTexture = useEditor((s) => s.setBorderTexture);
   const setGrain = useEditor((s) => s.setGrain);
   const resetFinish = useEditor((s) => s.resetFinish);
   const paper = getPaperTexture();
+  const border = getBorderTexture();
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2 className={styles.title}>6. Textura final ✨</h2>
         <p className={styles.description}>
-          O acabamento da arte. Papel amassado e granulado vêm desligados — ligue, regule e veja na hora.
+          O acabamento da arte. Papel amassado, textura de borda e granulado vêm desligados — ligue, regule e veja na hora.
         </p>
       </div>
 
@@ -64,6 +68,42 @@ export const TextureStep: React.FC = () => {
             max={PAPER_OPACITY_MAX}
             unit="%"
             onChange={(v) => setPaper({ opacity: v, enabled: true })}
+          />
+        </div>
+      </Card>
+
+      {/* Textura de borda (BORDER) em overlay */}
+      <Card title="Textura de Borda" subtitle="Opcional 🌽 mesclagem overlay (sugestão: 40%)">
+        {border && (
+          <img
+            src={border.src}
+            alt="Prévia da textura de borda"
+            style={{
+              width: '100%',
+              aspectRatio: '3 / 4',
+              objectFit: 'cover',
+              borderRadius: '8px',
+              border: '3px solid var(--c-border)',
+            }}
+          />
+        )}
+        <div className={styles.section}>
+          <Button
+            variant={finish.borderTexture.enabled ? 'primary' : 'secondary'}
+            size="sm"
+            fullWidth
+            icon={<Frame size={16} strokeWidth={2.5} />}
+            onClick={() => setBorderTexture({ enabled: !finish.borderTexture.enabled })}
+          >
+            {finish.borderTexture.enabled ? 'Borda (Ligado)' : 'Borda (Desligado)'}
+          </Button>
+          <Slider
+            label="Opacidade da textura"
+            value={finish.borderTexture.opacity}
+            min={BORDER_TEXTURE_OPACITY_MIN}
+            max={BORDER_TEXTURE_OPACITY_MAX}
+            unit="%"
+            onChange={(v) => setBorderTexture({ opacity: v, enabled: true })}
           />
         </div>
       </Card>

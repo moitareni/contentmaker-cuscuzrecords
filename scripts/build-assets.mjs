@@ -1,10 +1,13 @@
 // Gera os assets otimizados do Insta Kit a partir das pastas originais da marca.
 // Uso: npm run assets
 //
-// - Fundos, enfeites, textura e logos -> WebP LOSSLESS (idêntico pixel a pixel).
+// - Fundos, enfeites, grafismos, janela, textura e logos -> WebP LOSSLESS (idêntico pixel a pixel).
 //   Se um arquivo lossless passar de 1,5 MB, é re-codificado em WebP q92 (visualmente sem perda)
 //   e isso aparece no relatório.
-// - Enfeites e logos têm as bordas 100% transparentes recortadas (não muda nada visível).
+// - Enfeites, grafismos, janela e logos têm as bordas 100% transparentes recortadas (não muda nada
+//   visível). EXCEÇÃO: folhas inteiras (SOBREPOR / LUZ INDIRETA, 1080×1440) não são recortadas.
+// - Modo "divisão" (GRAFISMOS/PAPEL DIVISÃO) não existe no canvas: o WebP principal sai com o RGB
+//   INVERTIDO e o app aplica color-dodge (B/(1-S') com S'=1-S  ==  B/S, a divisão exata).
 // - Logo "sem fundo" (3000px, ~72 MB) é reduzida para 2160px (2x a largura do post).
 // - Miniaturas WebP para a interface (nunca usadas no export).
 // - Escreve src/assets-manifest.json, consumido pelo app.
@@ -29,10 +32,23 @@ sharp.cache(false);
 const SOURCES = {
   presets: 'BACKGROUNDS PRESETS',
   pure: 'BACKGROUND PUROS',
-  decorations: 'DETALHES DE BORDA',
+  decorations: 'ENFEITE',
+  graphics: 'GRAFISMOS',
+  window: 'JANELA',
   border: 'BORDER',
   logo: 'LOGO',
   texture: 'TEXTURE',
+};
+
+/**
+ * Ajustes por arquivo (chave = slug do nome). Sem entrada: id/label vêm do nome do arquivo.
+ * - blend: modo de mesclagem aplicado no canvas ('soft-light' | 'divide').
+ * - fullSheet: folha inteira 1080×1440 (não recorta transparência, nasce centralizada).
+ */
+const DECOR_OVERRIDES = {
+  'luz-indireta': { id: 'grade', label: 'Grade', blend: 'soft-light', fullSheet: true }, // README do ENFEITE
+  sobrepor: { id: 'sobrepor', label: 'Sobrepor', fullSheet: true },
+  'papel-divisao': { id: 'papel-divisao', label: 'Papel divisão', blend: 'divide' }, // README do GRAFISMOS
 };
 
 const report = [];
@@ -79,10 +95,12 @@ async function alphaBBox(file) {
   return { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1, full: { width, height } };
 }
 
-function pipeline(file, { trimBox, resizeWidth }) {
+function pipeline(file, { trimBox, resizeWidth, invertRgb }) {
   let p = sharp(file, { limitInputPixels: false });
   if (trimBox) p = p.extract({ left: trimBox.left, top: trimBox.top, width: trimBox.width, height: trimBox.height });
   if (resizeWidth) p = p.resize({ width: resizeWidth, kernel: 'lanczos3', withoutEnlargement: true });
+  // Inverte só o RGB (alpha intacto): base do modo divisão (ver cabeçalho).
+  if (invertRgb) p = p.negate({ alpha: false });
   return p;
 }
 
@@ -131,18 +149,65 @@ async function backgrounds(dir, category, labelPrefix) {
   return out;
 }
 
-async function decorations() {
-  const files = await listPngs(SOURCES.decorations);
+/**
+ * Miniatura de uma folha inteira semitransparente: aplicada sobre o 1º fundo puro com o
+ * mesmo modo de mesclagem do app (senão a prévia seria quase invisível no cartão claro).
+ */
+async function encodeSheetThumb(file, outName, blend) {
+  const pures = await listPngs(SOURCES.pure);
+  const W = 240;
+  const H = 320;
+  const base = await sharp(pures[0]).resize(W, H, { fit: 'fill' }).toBuffer();
+  const over = await sharp(file, { limitInputPixels: false }).resize(W, H, { fit: 'fill' }).toBuffer();
+  const merged = await sharp(base)
+    .composite([{ input: over, blend: blend === 'soft-light' ? 'soft-light' : 'over' }])
+    .png()
+    .toBuffer();
+  const buf = await sharp(merged)
+    .resize({ width: 240, height: 240, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .webp({ quality: 82, effort: 6 })
+    .toBuffer();
+  await fs.writeFile(path.join(OUT, 'thumbs', outName), buf);
+  return `${PUBLIC_PREFIX}/thumbs/${outName}`;
+}
+
+async function decorationGroup(dir, category) {
+  const files = await listPngs(dir);
   const out = [];
   for (const file of files) {
     const base = path.basename(file, path.extname(file));
-    const id = slug(base);
-    const box = await alphaBBox(file);
-    const main = await encodeMain(file, `deco-${id}.webp`, { trimBox: box });
-    const thumb = await encodeThumb(file, `deco-${id}.webp`, { width: 240, height: 240, fit: 'contain', trimBox: box });
-    out.push({ id, label: prettyLabel(base), ...main, thumb });
+    const ov = DECOR_OVERRIDES[slug(base)] ?? {};
+    const id = ov.id ?? slug(base);
+    const fullSheet = ov.fullSheet === true;
+    const box = fullSheet ? null : await alphaBBox(file);
+    const main = await encodeMain(file, `deco-${id}.webp`, {
+      trimBox: box ?? undefined,
+      invertRgb: ov.blend === 'divide',
+    });
+    const thumb = fullSheet
+      ? await encodeSheetThumb(file, `deco-${id}.webp`, ov.blend)
+      : // A miniatura mostra o arquivo ORIGINAL (nunca o invertido do modo divisão).
+        await encodeThumb(file, `deco-${id}.webp`, { width: 240, height: 240, fit: 'contain', trimBox: box ?? undefined });
+    out.push({
+      id,
+      category,
+      label: ov.label ?? prettyLabel(base),
+      ...(ov.blend ? { blend: ov.blend } : {}),
+      ...(fullSheet ? { fullSheet: true } : {}),
+      ...main,
+      thumb,
+    });
   }
-  return out;
+  // Folhas inteiras (grade/sobrepor) ficam no fim da lista; demais mantêm a ordem natural.
+  return out.sort((a, b) => Number(!!a.fullSheet) - Number(!!b.fullSheet));
+}
+
+async function decorations() {
+  return [
+    ...(await decorationGroup(SOURCES.decorations, 'enfeite')),
+    ...(await decorationGroup(SOURCES.graphics, 'grafismo')),
+    ...(await decorationGroup(SOURCES.window, 'janela')),
+  ];
 }
 
 async function logos() {
