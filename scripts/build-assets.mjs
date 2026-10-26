@@ -224,12 +224,12 @@ async function logos() {
     const thumb = await encodeThumb(file, `logo-${d.id}.webp`, { width: 240, height: 240, fit: 'contain', trimBox: box });
     out.push({ id: d.id, label: d.label, ...main, thumb });
   }
-  // Favicons a partir da logo com papel
-  const paper = path.join(dir, 'papel-logo.png');
-  const pbox = await alphaBBox(paper);
+  // Favicons a partir da logo sem papel (clean / sem fundo)
+  const clean = path.join(dir, 'logo_oficial_semfundo.png');
+  const cbox = await alphaBBox(clean);
   for (const [name, size] of [['favicon-64.png', 64], ['apple-touch-icon.png', 180]]) {
-    await sharp(paper, { limitInputPixels: false })
-      .extract({ left: pbox.left, top: pbox.top, width: pbox.width, height: pbox.height })
+    await sharp(clean, { limitInputPixels: false })
+      .extract({ left: cbox.left, top: cbox.top, width: cbox.width, height: cbox.height })
       .resize({ width: size, height: size, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png({ compressionLevel: 9, palette: true })
       .toFile(path.join(OUT, name));
