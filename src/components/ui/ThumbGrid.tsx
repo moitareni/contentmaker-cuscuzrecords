@@ -11,7 +11,7 @@ export interface ThumbItem {
 export interface ThumbGridProps {
   items: ThumbItem[];
   selectedId?: string | null;
-  aspectRatio?: '3-4' | '1-1';
+  aspectRatio?: '3-4' | '4-3' | '1-1';
   columns?: 2 | 3;
   onSelect: (id: string) => void;
 }

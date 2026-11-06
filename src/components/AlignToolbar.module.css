@@ -30,3 +30,16 @@
   background-color: var(--c-surface-muted);
   border-radius: 1px;
 }
+
+/* Selo da seleção múltipla (coluna estreita: só "N×") */
+.count {
+  min-width: 28px;
+  padding: 2px 6px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--c-border);
+  background-color: var(--c-surface-muted);
+  border-radius: 999px;
+}
+

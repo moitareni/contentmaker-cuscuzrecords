@@ -9,12 +9,20 @@ import {
 import type { ComponentProps, ComponentType } from 'react';
 import { Group, Layer, Stage, Transformer } from 'react-konva';
 import Konva from 'konva';
-import { COLORS, GUIDE_SNAP_THRESHOLD, POST_H, POST_W } from '../brand/brand';
+import { COLORS, GUIDE_SNAP_THRESHOLD, getPostDimensions } from '../brand/brand';
 import { alignDelta, snapToCenter, snapToGuides } from '../lib/align';
 import { importImageFiles } from '../lib/imageImport';
+import {
+  buildTransformPatches,
+  groupLimitMessage,
+  groupScaleBounds,
+  isMultiModifier,
+  unionBox,
+  type GroupScaleBounds,
+} from '../lib/multiSelect';
 import { clampZoom } from '../lib/zoom';
 import { useEditor } from '../store/editorStore';
-import type { AlignMode, DecorationEl, ImageEl, LogoEl, TextEl } from '../types';
+import type { AlignMode, Box, DecorationEl, El, ImageEl, LogoEl, TextEl } from '../types';
 import { BackgroundNode } from './BackgroundNode';
 import { DecorationNode } from './DecorationNode';
 import { ImageNode } from './ImageNode';
@@ -58,6 +66,26 @@ const BASE_PAD_WORLD = 52;
 // Folga mínima (px de tela) além das bordas do canvas principal, para que as
 // alças continuem visíveis/clicáveis com o elemento arrastado bem longe.
 const OVERLAY_SLACK_MIN = 520;
+
+/** Seleção múltipla: nenhum elemento pode encolher a ponto de o maior lado ficar < 20px do post. */
+const GROUP_MIN_SIDE = 20;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+interface GroupDrag {
+  leaderId: string;
+  /** Caixa (coords do post) que engloba o conjunto no início do arraste. */
+  startBox: Box;
+  leaderStart: { x: number; y: number };
+  /** Posição inicial (local = coords do post) de cada nó do conjunto. */
+  starts: Map<string, { x: number; y: number }>;
+}
+interface GroupXform {
+  /** Largura da caixa do Transformer no início (px do canvas). */
+  startW: number;
+  bounds: GroupScaleBounds;
+  /** Piso do fator para nenhum elemento sumir (≤ 1). */
+  minFactor: number;
+}
 
 /** Versão do patch do espelho no protótipo (incrementar a cada mudança de
  * lógica). O carimbo permite reaplicar de forma idempotente sob HMR. */
@@ -135,10 +163,25 @@ if (transformerProto.__mirrorPatchVersion !== MIRROR_PATCH_VERSION) {
 }
 
 // react-konva instancia hosts via `new Konva[type]` — registra a subclasse
-// para poder usá-la como <MirrorTransformerEl /> no JSX. A subclasse fica
-// VAZIA: o comportamento vive no patch da base acima.
+// para poder usá-la como <MirrorTransformerEl /> no JSX. O comportamento do
+// espelho vive no patch da base acima; a subclasse só troca o proxy de arraste.
 (Konva as unknown as Record<string, unknown>).MirrorTransformer =
-  class MirrorTransformer extends Konva.Transformer {};
+  class MirrorTransformer extends Konva.Transformer {
+    /**
+     * Seleção múltipla: o proxy original do Konva dá `startDrag` em cada nó
+     * seguidor, e cada um passaria a rodar o snap sozinho (o conjunto se
+     * deformaria). Aqui só o líder é arrastado de fato; o EditorCanvas faz o
+     * snap pela caixa da UNIÃO e posiciona os seguidores (ver handleDragMoveSnap).
+     * Com 1 nó o resultado é idêntico ao original (só `startDrag` do Transformer).
+     */
+    _proxyDrag(node: Konva.Node) {
+      node.on(`dragstart.${this._getEventNamespace()}`, (e) => {
+        if (!this.isDragging() && node !== this.findOne('.back')) {
+          this.startDrag(e, false);
+        }
+      });
+    }
+  };
 // Tag "host" do react-konva para a subclasse registrada acima — tipagem
 // reaproveita as props do Transformer padrão para o JSX checar tudo.
 const MirrorTransformerEl = 'MirrorTransformer' as unknown as ComponentType<
@@ -157,13 +200,23 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
   const bridgeActiveRef = useRef(false);
   // Snap do proxy-drag sempre via a closure mais recente do componente
   const handleDragMoveSnapRef = useRef<(node: Konva.Node) => void>(() => {});
+  // Arraste em conjunto (início/fim) acessível à ponte de eventos (deps [])
+  const groupApiRef = useRef<{
+    begin: (node: Konva.Node) => void;
+    end: () => void;
+    active: () => boolean;
+  }>({ begin: () => {}, end: () => {}, active: () => false });
+  const groupDragRef = useRef<GroupDrag | null>(null);
+  // Preenchido no transformstart de uma seleção múltipla; limpo logo após o transformend
+  const groupXformRef = useRef<GroupXform | null>(null);
+  const lastLimitToastRef = useRef(0);
   // Geometria do overlay em px de tela: tamanho do canvas e folga (slack) de
   // cada lado além do canvas principal. Só muda com zoom/fit — nunca no meio
   // de um arrasto.
   const [overlaySize, setOverlaySize] = useState({ w: 0, h: 0, slackL: 0, slackT: 0 });
 
   const doc = useEditor((s) => s.doc);
-  const selectedId = useEditor((s) => s.selectedId);
+  const selectedIds = useEditor((s) => s.selectedIds);
   const editingId = useEditor((s) => s.editingId);
   const guides = useEditor((s) => s.guides);
   const layoutGuides = useEditor((s) => s.layoutGuides);
@@ -173,10 +226,18 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
   const setFitWidth = useEditor((s) => s.setFitWidth);
 
   const select = useEditor((s) => s.select);
+  const toggleSelect = useEditor((s) => s.toggleSelect);
+  const applyPatches = useEditor((s) => s.applyPatches);
   const setEditing = useEditor((s) => s.setEditing);
   const setGuides = useEditor((s) => s.setGuides);
   const updateElement = useEditor((s) => s.updateElement);
   const setTextSize = useEditor((s) => s.setTextSize);
+  const setBackgroundOffsetY = useEditor((s) => s.setBackgroundOffsetY);
+  const step = useEditor((s) => s.step);
+
+  const format = doc.format ?? '3:4';
+  const { width: postW, height: postH } = getPostDimensions(format);
+  const backgroundOffsetY = doc.backgroundOffsetY ?? 180;
 
   // Largura de ajuste à tela (fit) mantendo a proporção 3:4.
   // A exibição real é fit × zoom; tudo abaixo deriva dela.
@@ -197,11 +258,11 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
     const maxW = clientWidth - pad * 2 - slack - dockReserve;
     const maxH = clientHeight - pad * 2 - slack;
 
-    // Proporção 3:4 com o pad do palco entra na conta:
-    //   horizontal: fit × (1 + 104/POST_W) ≤ maxW
-    //   vertical:   fit × (POST_H/POST_W) × (1 + 104/POST_H) ≤ maxH
-    const fitW = maxW / (1 + 104 / POST_W);
-    const fitH = (maxH / (1 + 104 / POST_H)) * (POST_W / POST_H);
+    const currentDoc = useEditor.getState().doc;
+    const { width: pW, height: pH } = getPostDimensions(currentDoc.format);
+
+    const fitW = maxW / (1 + 104 / pW);
+    const fitH = (maxH / (1 + 104 / pH)) * (pW / pH);
 
     return Math.max(200, Math.floor(Math.min(fitW, fitH)));
   }, []);
@@ -209,6 +270,10 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
   const updateDimensions = useCallback(() => {
     setFitWidth(computeFitWidth());
   }, [computeFitWidth, setFitWidth]);
+
+  useEffect(() => {
+    updateDimensions();
+  }, [format, updateDimensions]);
 
   useEffect(() => {
     updateDimensions();
@@ -222,8 +287,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
   }, [updateDimensions]);
 
   const displayWidth = Math.max(1, Math.round(fitWidth * zoom));
-  const scaleRatio = displayWidth / POST_W;
-  const displayHeight = (displayWidth * POST_H) / POST_W;
+  const scaleRatio = displayWidth / postW;
+  const displayHeight = (displayWidth * postH) / postW;
   // Pad do palco (px de tela): valor FIXO por lado, derivado só do zoom. Não
   // depende de seleção/arrasto → o layout nunca muda durante o uso e a folha
   // fica parada. Serve de respiro para as alças próximas da borda e de área
@@ -243,7 +308,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       e.preventDefault();
       const st = useEditor.getState();
       const fit = computeFitWidth();
-      const oldScale = (fit * st.zoom) / POST_W;
+      const currentPostW = getPostDimensions(st.doc.format).width;
+      const oldScale = (fit * st.zoom) / currentPostW;
       const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       const nextZoom = clampZoom(st.zoom * Math.pow(1.0015, -delta));
       if (nextZoom === st.zoom) return;
@@ -270,7 +336,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
         const cc = containerRef.current;
         if (!cc) return;
         const s = useEditor.getState();
-        const newScale = (computeFitWidth() * s.zoom) / POST_W;
+        const nextPostW = getPostDimensions(s.doc.format).width;
+        const newScale = (computeFitWidth() * s.zoom) / nextPostW;
         cc.scrollLeft += (sx / oldScale) * newScale - sx;
         cc.scrollTop += (sy / oldScale) * newScale - sy;
       });
@@ -530,7 +597,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       const node = tr && tr.nodes()[0];
       if (!node || !trRef.current?.nodes().length) return false;
       const st = useEditor.getState();
-      const scale = ((computeFitWidth() * st.zoom) / POST_W) || 1;
+      const currentPostW = getPostDimensions(st.doc.format).width;
+      const scale = ((computeFitWidth() * st.zoom) / currentPostW) || 1;
       proxyDragRef.current = {
         id: String(node.id()),
         startX: node.x(),
@@ -539,6 +607,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
         py: e.clientY,
         scale,
       };
+      // Seleção múltipla: o líder é o 1º nó; os demais seguem (ver handleDragMoveSnap).
+      groupApiRef.current.begin(node);
       bridgeActiveRef.current = false;
       return true;
     };
@@ -556,6 +626,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       if (proxy) {
         if (e.buttons === 0) {
           proxyDragRef.current = null;
+          // mouseup perdido: encerra como um soltar (comita o conjunto, sem estado preso)
+          groupApiRef.current.end();
           return;
         }
         const node = stageRef.current?.findOne(`#${proxy.id}`);
@@ -579,6 +651,10 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       const proxy = proxyDragRef.current;
       if (proxy) {
         proxyDragRef.current = null;
+        if (groupApiRef.current.active()) {
+          groupApiRef.current.end();
+          return;
+        }
         const node = stageRef.current?.findOne(`#${proxy.id}`);
         if (node) {
           updateElement(proxy.id, {
@@ -593,7 +669,7 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       dispatchOnMain(() => new MouseEvent('mouseup', FORWARD_PROPS(e)));
     };
     const onDblClick = (e: MouseEvent) => {
-      if (hitOverlay(e.clientX, e.clientY)) return;
+      if (hitOverlay(e.clientX, e.clientY) || isMultiModifier(e)) return;
       dispatchOnMain(() => new MouseEvent('dblclick', FORWARD_PROPS(e)));
     };
     const cloneTouch = (t: Touch) => {
@@ -810,17 +886,21 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       if (cancelled) return;
 
       // Sem Transformer durante a edição in-place de texto (estilo Photoshop)
-      if (!selectedId || selectedId === editingId) {
+      const ids = selectedIds.filter((id) => id !== editingId);
+      if (ids.length === 0) {
         tr.nodes([]);
         tr.getLayer()?.batchDraw();
         return;
       }
 
-      const selectedNode = stage.findOne(`#${selectedId}`);
-      if (selectedNode) {
-        tr.nodes([selectedNode]);
+      const found = ids
+        .map((id) => stage.findOne(`#${id}`))
+        .filter((n): n is Konva.Node => !!n);
+      if (found.length > 0) {
+        tr.nodes(found);
         tr.getLayer()?.batchDraw();
-      } else if (attempt < 60) {
+      }
+      if (found.length < ids.length && attempt < 60) {
         // O nó pode ainda não existir: o Image do Konva só monta quando o
         // asset termina de carregar (DecorationNode/ImageNode renderizam null),
         // e nenhuma alteração no doc vai disparar um re-render do React. Tentar
@@ -833,29 +913,43 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
     return () => {
       cancelled = true;
     };
-  }, [selectedId, editingId, doc.elements]);
+  }, [selectedIds, editingId, doc.elements]);
 
   // Alinhamento preciso à página via bounding box relativo à camada
   const alignSelected = useCallback(
     (mode: AlignMode) => {
-      if (!selectedId || !stageRef.current || !layerRef.current) return;
-      const node = stageRef.current.findOne(`#${selectedId}`);
-      if (!node) return;
-
+      if (selectedIds.length === 0 || !stageRef.current || !layerRef.current) return;
+      const stage = stageRef.current;
       const layer = layerRef.current;
-      const box = node.getClientRect({ relativeTo: layer });
+      const nodes = selectedIds
+        .map((id) => stage.findOne(`#${id}`))
+        .filter((n): n is Konva.Node => !!n);
+      if (nodes.length === 0) return;
 
-      const { dx, dy } = alignDelta(box, mode, POST_W, POST_H);
+      // Conjunto: alinha a caixa da UNIÃO à página (o grupo anda como uma peça só).
+      const box =
+        unionBox(nodes.map((n) => n.getClientRect({ relativeTo: layer }))) ??
+        nodes[0].getClientRect({ relativeTo: layer });
+      const { dx, dy } = alignDelta(box, mode, postW, postH);
 
-      const el = doc.elements.find((e) => e.id === selectedId);
-      if (!el) return;
-
-      updateElement(selectedId, {
-        x: Math.round(node.x() + dx),
-        y: Math.round(node.y() + dy),
-      });
+      if (nodes.length === 1) {
+        const node = nodes[0];
+        const el = doc.elements.find((e) => e.id === selectedIds[0]);
+        if (!el) return;
+        updateElement(selectedIds[0], {
+          x: Math.round(node.x() + dx),
+          y: Math.round(node.y() + dy),
+        });
+        return;
+      }
+      applyPatches(
+        nodes.map((n) => ({
+          id: String(n.id()),
+          patch: { x: round2(n.x() + dx), y: round2(n.y() + dy) },
+        })),
+      );
     },
-    [selectedId, doc.elements, updateElement]
+    [selectedIds, doc.elements, updateElement, applyPatches]
   );
 
   useImperativeHandle(
@@ -871,8 +965,19 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
   // Lógica de imã (snap) no centro + nas guias de layout durante o arrasto
   const handleDragMoveSnap = (node: Konva.Node) => {
     if (!layerRef.current) return;
-    const box = node.getClientRect({ relativeTo: layerRef.current });
-    const snap = snapToCenter(box, POST_W, POST_H, 16);
+    // Seleção múltipla: só o líder roda o snap, sobre a caixa da UNIÃO (a do início
+    // do arraste deslocada pelo quanto o líder já andou) — o conjunto não deforma.
+    const g = groupDragRef.current;
+    const isLeader = !!g && String(node.id()) === g.leaderId;
+    const box: Box =
+      g && isLeader
+        ? {
+            ...g.startBox,
+            x: g.startBox.x + (node.x() - g.leaderStart.x),
+            y: g.startBox.y + (node.y() - g.leaderStart.y),
+          }
+        : node.getClientRect({ relativeTo: layerRef.current });
+    const snap = snapToCenter(box, postW, postH, 16);
 
     let dx = snap.dx;
     let dy = snap.dy;
@@ -885,8 +990,8 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       const shifted = { ...box, x: box.x + dx, y: box.y + dy };
       const gsnap = snapToGuides(
         shifted,
-        POST_W,
-        POST_H,
+        postW,
+        postH,
         {
           margin: layoutGuides.margin,
           useMargins: layoutGuides.showMargins,
@@ -906,11 +1011,121 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
       node.y(node.y() + dy);
     }
 
+    // Seguidores: mesma translação do líder desde o início (já com o snap aplicado).
+    if (g && isLeader) {
+      const stage = stageRef.current;
+      const ddx = node.x() - g.leaderStart.x;
+      const ddy = node.y() - g.leaderStart.y;
+      g.starts.forEach((s, id) => {
+        if (id === g.leaderId) return;
+        stage?.findOne(`#${id}`)?.position({ x: s.x + ddx, y: s.y + ddy });
+      });
+    }
+
     setGuides({ v, h });
   };
   // A ponte de eventos é vinculada só no mount (deps []): o proxy-drag usa
   // sempre a closure mais recente do snap via ref.
   handleDragMoveSnapRef.current = handleDragMoveSnap;
+
+  /** Início de um arraste: se o nó pertence a uma seleção múltipla, registra o conjunto. */
+  const beginGroupDrag = (node: Konva.Node) => {
+    groupDragRef.current = null;
+    const stage = stageRef.current;
+    const layer = layerRef.current;
+    const ids = useEditor.getState().selectedIds;
+    if (!stage || !layer || ids.length < 2 || !ids.includes(String(node.id()))) return;
+    const nodes = ids.map((id) => stage.findOne(`#${id}`)).filter((n): n is Konva.Node => !!n);
+    if (nodes.length < 2) return;
+    const startBox = unionBox(nodes.map((n) => n.getClientRect({ relativeTo: layer })));
+    if (!startBox) return;
+    groupDragRef.current = {
+      leaderId: String(node.id()),
+      startBox,
+      leaderStart: { x: node.x(), y: node.y() },
+      starts: new Map(nodes.map((n) => [String(n.id()), { x: n.x(), y: n.y() }])),
+    };
+  };
+
+  /** Fim do arraste em conjunto: UM commit no doc (um passo de undo). */
+  const endGroupDrag = () => {
+    const g = groupDragRef.current;
+    if (!g) return;
+    const stage = stageRef.current;
+    const patches = [...g.starts.keys()].flatMap((id) => {
+      const n = stage?.findOne(`#${id}`);
+      return n ? [{ id, patch: { x: round2(n.x()), y: round2(n.y()) } }] : [];
+    });
+    applyPatches(patches);
+    groupDragRef.current = null;
+    setGuides({ v: false, h: false });
+  };
+  groupApiRef.current = { begin: beginGroupDrag, end: endGroupDrag, active: () => !!groupDragRef.current };
+
+  /** Commit por nó, silenciado quando o conjunto está comitando em lote (arraste/transformação). */
+  const changeEl = (id: string, patch: Partial<El>) => {
+    if (groupDragRef.current || groupXformRef.current) return;
+    updateElement(id, patch);
+  };
+  const applyTextSize = (id: string, requested: number) =>
+    groupXformRef.current ? requested : setTextSize(id, requested);
+
+  /** Seleção: Ctrl/Cmd/Shift soma/remove; clique simples seleciona só este. */
+  const handleSelect = (id: string, e?: { evt?: MouseEvent | TouchEvent }) => {
+    if (isMultiModifier(e?.evt)) toggleSelect(id);
+    else select(id);
+  };
+
+  const notifyGroupLimit = (message: string | null) => {
+    if (!message) return;
+    const now = Date.now();
+    if (now - lastLimitToastRef.current < 1500) return;
+    lastLimitToastRef.current = now;
+    useEditor.getState().showToast('error', message);
+  };
+
+  // Transformer em conjunto: guarda largura inicial + limites (Texto ≤ Título, não sumir)
+  const handleTrTransformStart = () => {
+    groupDragRef.current = null; // nunca deixa estado de arraste preso
+    const tr = trRef.current;
+    const layer = layerRef.current;
+    const nodes = tr?.nodes() ?? [];
+    if (!tr || !layer || nodes.length < 2) {
+      groupXformRef.current = null;
+      return;
+    }
+    const bounds = groupScaleBounds(
+      useEditor.getState().doc.elements,
+      nodes.map((n) => String(n.id())),
+    );
+    let minFactor = 0;
+    for (const n of nodes) {
+      const r = n.getClientRect({ relativeTo: layer });
+      const side = Math.max(r.width, r.height);
+      if (side > 0) minFactor = Math.max(minFactor, Math.min(1, GROUP_MIN_SIDE / side));
+    }
+    groupXformRef.current = { startW: tr.width(), bounds, minFactor };
+  };
+
+  // Commit em lote ÚNICO: o Konva dispara este handler ANTES do transformend de cada nó,
+  // então as escalas ainda estão intactas aqui. Os nós ficam silenciados (changeEl) até o
+  // próximo tick.
+  const handleTrTransformEnd = () => {
+    const nodes = trRef.current?.nodes() ?? [];
+    if (nodes.length >= 2) {
+      const results = nodes.map((n) => ({
+        id: String(n.id()),
+        x: n.x(),
+        y: n.y(),
+        rotation: n.rotation(),
+        scaleX: n.scaleX(),
+      }));
+      applyPatches(buildTransformPatches(useEditor.getState().doc.elements, results));
+    }
+    setTimeout(() => {
+      groupXformRef.current = null;
+    }, 0);
+  };
 
   const handleDragEndSnap = () => {
     setGuides({ v: false, h: false });
@@ -952,12 +1167,15 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
           scaleY={scaleRatio}
           style={{ position: 'relative', left: -padX, top: -padY }}
           onMouseDown={(e) => {
-            // Desmarca ao clicar na área vazia do palco
+            // Desmarca ao clicar na área vazia do palco (Ctrl/Cmd/Shift preserva a seleção)
             if (e.target === e.target.getStage()) {
+              if (isMultiModifier(e.evt)) return;
               select(null);
               setEditing(null);
             }
           }}
+          onDragStart={(e) => beginGroupDrag(e.target)}
+          onDragEnd={endGroupDrag}
           onTouchStart={(e) => {
             if (e.target === e.target.getStage()) {
               select(null);
@@ -968,12 +1186,16 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
           <Layer ref={layerRef}>
             {/* A arte toda fica recortada nos limites 3:4 (o palco é maior
                 que a folha para as alças do Transformer aparecerem fora dela) */}
-            <Group clipX={0} clipY={0} clipWidth={POST_W} clipHeight={POST_H}>
-            {/* Fundo 3:4 Fixo e Travado */}
+            <Group clipX={0} clipY={0} clipWidth={postW} clipHeight={postH}>
+            {/* Fundo */}
             <BackgroundNode
               backgroundId={doc.backgroundId}
               flipX={doc.backgroundFlipX}
               flipY={doc.backgroundFlipY}
+              format={format}
+              offsetY={backgroundOffsetY}
+              isInteractive={step === 0 && format === '1:1'}
+              onOffsetYChange={setBackgroundOffsetY}
             />
 
             {/* Elementos em ordem de camada */}
@@ -983,9 +1205,9 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                   <DecorationNode
                     key={el.id}
                     element={el as DecorationEl}
-                    isSelected={selectedId === el.id}
-                    onSelect={() => select(el.id)}
-                    onChange={(patch) => updateElement(el.id, patch)}
+                    isSelected={selectedIds.includes(el.id)}
+                    onSelect={(e) => handleSelect(el.id, e)}
+                    onChange={(patch) => changeEl(el.id, patch)}
                     onDragMoveSnap={handleDragMoveSnap}
                     onDragEndSnap={handleDragEndSnap}
                   />
@@ -996,15 +1218,16 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                   <TextNode
                     key={el.id}
                     element={el as TextEl}
-                    isSelected={selectedId === el.id}
+                    isSelected={selectedIds.includes(el.id)}
                     isEditing={editingId === el.id}
-                    onSelect={() => select(el.id)}
-                    onDoubleClick={() => {
+                    onSelect={(e) => handleSelect(el.id, e)}
+                    onDoubleClick={(e) => {
+                      if (isMultiModifier(e?.evt as MouseEvent) || selectedIds.length > 1) return;
                       select(null);
                       setEditing(el.id);
                     }}
-                    onChange={(patch) => updateElement(el.id, patch)}
-                    onApplyTextSize={(req) => setTextSize(el.id, req)}
+                    onChange={(patch) => changeEl(el.id, patch)}
+                    onApplyTextSize={(req) => applyTextSize(el.id, req)}
                     onMeasure={editingId === el.id ? handleMeasure : undefined}
                     onDragMoveSnap={handleDragMoveSnap}
                     onDragEndSnap={handleDragEndSnap}
@@ -1016,9 +1239,9 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                   <ImageNode
                     key={el.id}
                     element={el as ImageEl}
-                    isSelected={selectedId === el.id}
-                    onSelect={() => select(el.id)}
-                    onChange={(patch) => updateElement(el.id, patch)}
+                    isSelected={selectedIds.includes(el.id)}
+                    onSelect={(e) => handleSelect(el.id, e)}
+                    onChange={(patch) => changeEl(el.id, patch)}
                     onDragMoveSnap={handleDragMoveSnap}
                     onDragEndSnap={handleDragEndSnap}
                   />
@@ -1029,9 +1252,9 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                   <LogoNode
                     key={el.id}
                     element={el as LogoEl}
-                    isSelected={selectedId === el.id}
-                    onSelect={() => select(el.id)}
-                    onChange={(patch) => updateElement(el.id, patch)}
+                    isSelected={selectedIds.includes(el.id)}
+                    onSelect={(e) => handleSelect(el.id, e)}
+                    onChange={(patch) => changeEl(el.id, patch)}
                     onDragMoveSnap={handleDragMoveSnap}
                     onDragEndSnap={handleDragEndSnap}
                   />
@@ -1041,7 +1264,12 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
             })}
 
             {/* Acabamento do post (passo 6: papel + grain) */}
-            <TextureOverlays finish={finish} />
+            <TextureOverlays
+              finish={finish}
+              format={format}
+              postWidth={postW}
+              postHeight={postH}
+            />
             </Group>
 
             {/* Guias de layout estilo Photoshop (margens/centro/terços) */}
@@ -1051,11 +1279,13 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
                 showMargins={layoutGuides.showMargins}
                 showCenters={layoutGuides.showCenters}
                 showThirds={layoutGuides.showThirds}
+                postWidth={postW}
+                postHeight={postH}
               />
             )}
 
             {/* Linhas guias de snap no centro */}
-            <SnapGuides v={guides.v} h={guides.h} />
+            <SnapGuides v={guides.v} h={guides.h} postWidth={postW} postHeight={postH} />
           </Layer>
         </Stage>
         </div>
@@ -1120,12 +1350,34 @@ export const EditorCanvas = forwardRef<EditorCanvasHandle>((_props, ref) => {
             anchorStrokeWidth={2}
             anchorSize={16}
             anchorCornerRadius={4}
+            onTransformStart={handleTrTransformStart}
+            onTransformEnd={handleTrTransformEnd}
             boundBoxFunc={(oldBox, newBox) => {
               // Impede que fique menor que 20px ou invertido (sem Math.abs:
               // largura/altura negativas = caixa invertida, que dispara o flip
               // espontâneo do enfeite no meio do arrasto).
               if (newBox.width < 20 || newBox.height < 20) {
                 return oldBox;
+              }
+              if (!groupXformRef.current && (trRef.current?.nodes()?.length ?? 0) >= 2) {
+                handleTrTransformStart();
+              }
+              // Seleção múltipla: fator de escala dentro dos limites do conjunto
+              // (Texto ≤ Título e nenhum elemento some). Rotação/movimento (f≈1) passam.
+              const g = groupXformRef.current;
+              if (g && g.startW > 0) {
+                const f = newBox.width / g.startW;
+                if (Math.abs(f - 1) > 1e-3) {
+                  if (f > g.bounds.max) {
+                    notifyGroupLimit(groupLimitMessage(g.bounds.maxReason, 'max'));
+                    return oldBox;
+                  }
+                  const lo = Math.max(g.bounds.min, g.minFactor);
+                  if (f < lo) {
+                    notifyGroupLimit(g.bounds.min >= g.minFactor ? groupLimitMessage(g.bounds.minReason, 'min') : null);
+                    return oldBox;
+                  }
+                }
               }
               return newBox;
             }}

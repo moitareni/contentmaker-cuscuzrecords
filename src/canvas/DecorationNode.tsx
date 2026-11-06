@@ -8,7 +8,8 @@ import type { DecorationEl } from '../types';
 export interface DecorationNodeProps {
   element: DecorationEl;
   isSelected: boolean;
-  onSelect: () => void;
+  /** Recebe o evento do Konva: Ctrl/Cmd/Shift soma/remove da seleção. */
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (patch: Partial<DecorationEl>) => void;
   onDragMoveSnap: (node: Konva.Node) => void;
   onDragEndSnap: () => void;

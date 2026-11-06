@@ -1,6 +1,6 @@
 import React from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { POST_W } from '../brand/brand';
+import { getPostDimensions } from '../brand/brand';
 import { formatZoomPercent, zoomStepIn, zoomStepOut } from '../lib/zoom';
 import { useEditor } from '../store/editorStore';
 import { IconButton } from './ui/IconButton';
@@ -13,9 +13,11 @@ import styles from './ZoomControls.module.css';
 export const ZoomControls: React.FC = () => {
   const zoom = useEditor((s) => s.zoom);
   const fitWidth = useEditor((s) => s.fitWidth);
+  const format = useEditor((s) => s.doc.format);
   const setZoom = useEditor((s) => s.setZoom);
 
-  const fitScale = fitWidth / POST_W;
+  const { width: postW } = getPostDimensions(format);
+  const fitScale = fitWidth / postW;
   const trueScale = fitScale * zoom;
 
   const stepTo = (target: number) => setZoom(target / fitScale);

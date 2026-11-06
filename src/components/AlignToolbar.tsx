@@ -24,20 +24,39 @@ export interface AlignToolbarProps {
 
 export const AlignToolbar: React.FC<AlignToolbarProps> = ({ onAlignToPage }) => {
   const selected = useSelected();
+  const selectedIds = useEditor((s) => s.selectedIds);
   const removeElement = useEditor((s) => s.removeElement);
+  const removeElements = useEditor((s) => s.removeElements);
   const duplicateElement = useEditor((s) => s.duplicateElement);
+  const duplicateElements = useEditor((s) => s.duplicateElements);
   const bringForward = useEditor((s) => s.bringForward);
+  const bringForwardMany = useEditor((s) => s.bringForwardMany);
   const sendBackward = useEditor((s) => s.sendBackward);
+  const sendBackwardMany = useEditor((s) => s.sendBackwardMany);
   const updateElement = useEditor((s) => s.updateElement);
 
-  if (!selected) return null;
+  // Seleção múltipla: `selected` é null (há mais de um), mas as ações valem para o conjunto.
+  const multi = selectedIds.length > 1;
+  if (!selected && !multi) return null;
 
   // Enfeites e imagens do usuário têm espelhamento (flipX/flipY no store)
+  // (Em conjunto não espelha: o flip é por elemento.)
   const flipTarget =
-    selected.kind === 'decoration' || selected.kind === 'image' ? selected : null;
+    selected && (selected.kind === 'decoration' || selected.kind === 'image') ? selected : null;
 
   return (
-    <aside aria-label="Ações do elemento" className={styles.toolbar}>
+    <aside aria-label={multi ? 'Ações dos elementos selecionados' : 'Ações do elemento'} className={styles.toolbar}>
+      {multi && (
+        <div
+          className={styles.count}
+          aria-live="polite"
+          aria-label={`${selectedIds.length} elementos selecionados`}
+          title={`${selectedIds.length} selecionados · Ctrl + clique soma ou tira da seleção`}
+        >
+          {selectedIds.length}×
+        </div>
+      )}
+      {multi && <div className={styles.divider} />}
       {/* Alinhamento Horizontal à Página */}
       <div className={styles.group}>
         <IconButton
@@ -115,26 +134,26 @@ export const AlignToolbar: React.FC<AlignToolbarProps> = ({ onAlignToPage }) => 
           icon={<ArrowUpToLine size={17} strokeWidth={2.5} />}
           label="Trazer para frente"
           size="sm"
-          onClick={() => bringForward(selected.id)}
+          onClick={() => (selected ? bringForward(selected.id) : bringForwardMany(selectedIds))}
         />
         <IconButton
           icon={<ArrowDownToLine size={17} strokeWidth={2.5} />}
           label="Enviar para trás"
           size="sm"
-          onClick={() => sendBackward(selected.id)}
+          onClick={() => (selected ? sendBackward(selected.id) : sendBackwardMany(selectedIds))}
         />
         <IconButton
           icon={<Copy size={17} strokeWidth={2.5} />}
           label="Duplicar (Ctrl+D)"
           size="sm"
-          onClick={() => duplicateElement(selected.id)}
+          onClick={() => (selected ? duplicateElement(selected.id) : duplicateElements(selectedIds))}
         />
         <IconButton
           icon={<Trash2 size={17} strokeWidth={2.5} />}
           label="Excluir (Delete)"
           size="sm"
           variant="danger"
-          onClick={() => removeElement(selected.id)}
+          onClick={() => (selected ? removeElement(selected.id) : removeElements(selectedIds))}
         />
       </div>
     </aside>

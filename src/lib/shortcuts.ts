@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
-import { POST_W } from '../brand/brand';
+import { getPostDimensions } from '../brand/brand';
 import { zoomStepIn, zoomStepOut } from './zoom';
 import { redo, undo, useEditor } from '../store/editorStore';
+import { shiftPatches } from './multiSelect';
 
 /**
  * Hook para atalhos de teclado globais do editor:
  * - Ctrl+Z / Ctrl+Shift+Z / Cmd+Z / Cmd+Shift+Z (Desfazer / Refazer)
- * - Delete / Backspace (Excluir elemento selecionado se não estiver digitando em input)
- * - Ctrl+D / Cmd+D (Duplicar elemento selecionado)
- * - Setas direcionais (Mover 1px, ou 10px com Shift)
+ * - Delete / Backspace (Excluir elemento(s) selecionado(s) se não estiver digitando em input)
+ * - Ctrl+D / Cmd+D (Duplicar elemento(s) selecionado(s))
+ * - Setas direcionais (Mover 1px, ou 10px com Shift; a seleção múltipla anda junta)
  * - Escape (Desmarcar seleção)
  * - G (Mostrar/esconder guias de layout)
  * - Ctrl+= / Ctrl+- / Ctrl+0 (Zoom + / Zoom − / Ajustar à tela)
@@ -29,7 +30,16 @@ export function useKeyboardShortcuts() {
 
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const mod = isMac ? e.metaKey : e.ctrlKey;
-      const { selectedId, removeElement, duplicateElement, updateElement, doc, select, toggleGuidesVisible } = useEditor.getState();
+      const {
+        selectedIds,
+        removeElements,
+        duplicateElement,
+        duplicateElements,
+        applyPatches,
+        doc,
+        select,
+        toggleGuidesVisible,
+      } = useEditor.getState();
 
       // Undo / Redo
       if (mod && e.key.toLowerCase() === 'z') {
@@ -63,14 +73,16 @@ export function useKeyboardShortcuts() {
       // Zoom -> Ctrl+= amplia, Ctrl+- reduz, Ctrl+0 ajusta à tela
       if (mod && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
-        const { zoom, fitWidth, setZoom } = useEditor.getState();
-        setZoom(zoomStepIn((fitWidth * zoom) / POST_W) / (fitWidth / POST_W));
+        const { zoom, fitWidth, setZoom, doc } = useEditor.getState();
+        const { width: postW } = getPostDimensions(doc.format);
+        setZoom(zoomStepIn((fitWidth * zoom) / postW) / (fitWidth / postW));
         return;
       }
       if (mod && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
-        const { zoom, fitWidth, setZoom } = useEditor.getState();
-        setZoom(zoomStepOut((fitWidth * zoom) / POST_W) / (fitWidth / POST_W));
+        const { zoom, fitWidth, setZoom, doc } = useEditor.getState();
+        const { width: postW } = getPostDimensions(doc.format);
+        setZoom(zoomStepOut((fitWidth * zoom) / postW) / (fitWidth / postW));
         return;
       }
       if (mod && e.key === '0') {
@@ -80,22 +92,23 @@ export function useKeyboardShortcuts() {
       }
 
       // Se nenhum elemento estiver selecionado, os demais atalhos não operam
-      if (!selectedId) return;
+      if (selectedIds.length === 0) return;
 
-      const currentEl = doc.elements.find((el) => el.id === selectedId);
-      if (!currentEl) return;
+      const picked = doc.elements.filter((el) => selectedIds.includes(el.id));
+      if (picked.length === 0) return;
 
       // Duplicate: Ctrl+D
       if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        duplicateElement(selectedId);
+        if (selectedIds.length === 1) duplicateElement(selectedIds[0]);
+        else duplicateElements(selectedIds);
         return;
       }
 
       // Delete / Backspace: Excluir
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        removeElement(selectedId);
+        removeElements(selectedIds);
         return;
       }
 
@@ -110,10 +123,7 @@ export function useKeyboardShortcuts() {
         if (e.key === 'ArrowLeft') dx = -step;
         if (e.key === 'ArrowRight') dx = step;
 
-        updateElement(selectedId, {
-          x: currentEl.x + dx,
-          y: currentEl.y + dy,
-        });
+        applyPatches(shiftPatches(doc.elements, selectedIds, dx, dy));
       }
     };
 

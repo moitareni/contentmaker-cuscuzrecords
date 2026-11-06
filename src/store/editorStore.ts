@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { temporal } from 'zundo';
@@ -23,13 +24,24 @@ import {
   POST_H,
   POST_W,
   TEXT_PRESETS,
+  getPostDimensions,
   type LogoSize,
+  type PostFormat,
   type TextStyle,
 } from '../brand/brand';
 import { getBackground, getDecoration, getLogo } from '../assets';
 import { clampTextSize } from '../lib/textRules';
 import { clampZoom } from '../lib/zoom';
 import { clampImageCenter, hasImageSlots, initialImageScale, isPersistedImage } from '../lib/imageRules';
+import {
+  applyElPatches,
+  duplicateGroup,
+  pruneIds,
+  reorderBackward,
+  reorderForward,
+  toggleId,
+  type ElPatch,
+} from '../lib/multiSelect';
 import {
   STEP_OF_KIND,
   type BorderTextureFinish,
@@ -101,6 +113,12 @@ function sanitizeFinish(f: FinishState | undefined): FinishState {
 
 export interface EditorState {
   doc: Doc;
+  /**
+   * Seleção (ordem de seleção). Fonte da verdade da seleção múltipla.
+   * Sessão: nunca persiste nem entra no undo.
+   */
+  selectedIds: string[];
+  /** DERIVADO de `selectedIds`: o id quando há exatamente 1 selecionado, senão null. */
   selectedId: string | null;
   editingId: string | null;
   step: StepId;
@@ -116,6 +134,10 @@ export interface EditorState {
 
   setStep: (step: StepId) => void;
   select: (id: string | null) => void;
+  /** Ctrl/Cmd/Shift+clique: soma ou remove da seleção (troca o passo só ao restar 1). */
+  toggleSelect: (id: string) => void;
+  /** Seleciona vários de uma vez (ignora ids que não existem). */
+  selectMany: (ids: string[]) => void;
   setEditing: (id: string | null) => void;
   setGuides: (g: { v: boolean; h: boolean }) => void;
   showToast: (kind: Toast['kind'], message: string) => void;
@@ -133,6 +155,8 @@ export interface EditorState {
   setZoom: (factor: number) => void;
   setFitWidth: (width: number) => void;
 
+  setFormat: (format: PostFormat) => void;
+  setBackgroundOffsetY: (offsetY: number) => void;
   setBackground: (id: string) => void;
   toggleBackgroundFlipX: () => void;
   toggleBackgroundFlipY: () => void;
@@ -157,13 +181,28 @@ export interface EditorState {
   duplicateElement: (id: string) => void;
   bringForward: (id: string) => void;
   sendBackward: (id: string) => void;
+  /** Aplica vários patches num ÚNICO set do doc (um passo de undo). Sem validação de texto: use `buildTransformPatches`. */
+  applyPatches: (patches: ElPatch[]) => void;
+  removeElements: (ids: string[]) => void;
+  /** Duplica o conjunto como bloco e seleciona as cópias (logo ignorada; imagens tudo-ou-nada). */
+  duplicateElements: (ids: string[]) => void;
+  bringForwardMany: (ids: string[]) => void;
+  sendBackwardMany: (ids: string[]) => void;
   reset: () => void;
 }
 
+/** Estado de seleção coerente: `selectedId` é sempre derivado de `selectedIds`. */
+const selection = (ids: string[]) => ({
+  selectedIds: ids,
+  selectedId: ids.length === 1 ? ids[0] : null,
+});
+
 const emptyDoc = (): Doc => ({
+  format: '3:4',
   backgroundId: null,
   backgroundFlipX: false,
   backgroundFlipY: false,
+  backgroundOffsetY: 180,
   elements: [],
 });
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -179,23 +218,24 @@ function freeCenter(elements: El[], x = POST_W / 2, y = POST_H / 2) {
   return { x: cx, y: cy };
 }
 
-function logoPlacement(el: LogoEl, place: LogoPlace) {
+function logoPlacement(el: LogoEl, place: LogoPlace, format: PostFormat = '3:4') {
+  const { width: postW, height: postH } = getPostDimensions(format);
   const asset = getLogo(el.variant);
   const w = asset.width * el.scale;
   const h = asset.height * el.scale;
   const m = LOGO_MARGIN;
   const left = m + w / 2;
-  const right = POST_W - m - w / 2;
+  const right = postW - m - w / 2;
   const top = m + h / 2;
-  const bottom = POST_H - m - h / 2;
+  const bottom = postH - m - h / 2;
   const map: Record<LogoPlace, { x: number; y: number }> = {
     tl: { x: left, y: top },
     tr: { x: right, y: top },
     bl: { x: left, y: bottom },
     br: { x: right, y: bottom },
-    tc: { x: POST_W / 2, y: top },
-    bc: { x: POST_W / 2, y: bottom },
-    center: { x: POST_W / 2, y: POST_H / 2 },
+    tc: { x: postW / 2, y: top },
+    bc: { x: postW / 2, y: bottom },
+    center: { x: postW / 2, y: postH / 2 },
   };
   return { ...map[place], rotation: 0 };
 }
@@ -223,10 +263,17 @@ function debouncedLocalStorage(delay = 300): StateStorage {
 /** Remove referências a assets que não existem mais (ex.: asset apagado da pasta). */
 function sanitize(doc: Doc | undefined): Doc {
   if (!doc) return emptyDoc();
+  const validFormats: PostFormat[] = ['3:4', '4:3', '1:1'];
+  const format: PostFormat = validFormats.includes(doc.format as PostFormat) ? (doc.format as PostFormat) : '3:4';
+  const backgroundOffsetY = typeof doc.backgroundOffsetY === 'number' && Number.isFinite(doc.backgroundOffsetY)
+    ? Math.min(360, Math.max(0, Math.round(doc.backgroundOffsetY)))
+    : 180;
   return {
+    format,
     backgroundId: getBackground(doc.backgroundId) ? doc.backgroundId : null,
     backgroundFlipX: Boolean(doc.backgroundFlipX),
     backgroundFlipY: Boolean(doc.backgroundFlipY),
+    backgroundOffsetY,
     elements: (doc.elements ?? []).filter(
       (e) =>
         // Enfeite só fica se o asset do manifest existir.
@@ -250,7 +297,7 @@ export const useEditor = create<EditorState>()(
 
         return {
           doc: emptyDoc(),
-          selectedId: null,
+          ...selection([]),
           editingId: null,
           step: 0,
           guides: { v: false, h: false },
@@ -270,13 +317,27 @@ export const useEditor = create<EditorState>()(
             set((s) => {
               const sel = s.doc.elements.find((e) => e.id === s.selectedId);
               const keep = sel && STEP_OF_KIND[sel.kind] === step;
-              return { step, selectedId: keep ? s.selectedId : null, editingId: null };
+              return { step, ...selection(keep && sel ? [sel.id] : []), editingId: null };
             }),
           select: (id) =>
             set((s) => {
-              if (!id) return { selectedId: null };
+              if (!id) return selection([]);
               const el = s.doc.elements.find((e) => e.id === id);
-              return el ? { selectedId: id, step: STEP_OF_KIND[el.kind] } : {};
+              return el ? { ...selection([id]), step: STEP_OF_KIND[el.kind] } : {};
+            }),
+          toggleSelect: (id) =>
+            set((s) => {
+              if (!s.doc.elements.some((e) => e.id === id)) return {};
+              const next = toggleId(s.selectedIds, id);
+              // Restou 1: o painel lateral acompanha o tipo dele (invariante passo × seleção única).
+              const only = next.length === 1 ? s.doc.elements.find((e) => e.id === next[0]) : undefined;
+              return only ? { ...selection(next), step: STEP_OF_KIND[only.kind] } : selection(next);
+            }),
+          selectMany: (ids) =>
+            set((s) => {
+              const next = pruneIds(ids, s.doc.elements);
+              const only = next.length === 1 ? s.doc.elements.find((e) => e.id === next[0]) : undefined;
+              return only ? { ...selection(next), step: STEP_OF_KIND[only.kind] } : selection(next);
             }),
           setEditing: (id) => set({ editingId: id }),
           setGuides: (g) => {
@@ -346,6 +407,16 @@ export const useEditor = create<EditorState>()(
               },
             })),
 
+          setFormat: (format) =>
+            setDoc((d) => ({
+              ...d,
+              format,
+              backgroundOffsetY: d.backgroundOffsetY ?? 180,
+            })),
+          setBackgroundOffsetY: (offsetY) => {
+            const clamped = Math.min(360, Math.max(0, Math.round(offsetY)));
+            setDoc((d) => ({ ...d, backgroundOffsetY: clamped }));
+          },
           setBackground: (id) => setDoc((d) => ({ ...d, backgroundId: id })),
           toggleBackgroundFlipX: () =>
             setDoc((d) => ({ ...d, backgroundFlipX: !d.backgroundFlipX })),
@@ -355,18 +426,20 @@ export const useEditor = create<EditorState>()(
           addDecoration: (assetId) => {
             const asset = getDecoration(assetId);
             if (!asset) return;
+            const { width: postW, height: postH } = getPostDimensions(get().doc.format);
             const pos = asset.fullSheet
-              ? { x: POST_W / 2, y: POST_H / 2 }
-              : freeCenter(get().doc.elements);
+              ? { x: postW / 2, y: postH / 2 }
+              : freeCenter(get().doc.elements, postW / 2, postH / 2);
             const el: El = { id: uid(), kind: 'decoration', assetId, ...pos, rotation: 0, scale: 1, flipX: false, flipY: false };
             setDoc((d) => ({ ...d, elements: [...d.elements, el] }));
-            set({ selectedId: el.id });
+            set(selection([el.id]));
           },
 
           addText: (style) => {
             const p = TEXT_PRESETS[style];
             const elements = get().doc.elements;
-            const pos = freeCenter(elements);
+            const { width: postW, height: postH } = getPostDimensions(get().doc.format);
+            const pos = freeCenter(elements, postW / 2, postH / 2);
             const base: TextEl = {
               id: uid(),
               kind: 'text',
@@ -387,7 +460,7 @@ export const useEditor = create<EditorState>()(
             // Nasce já respeitando a regra (sem mostrar erro: o usuário não pediu esse tamanho).
             base.fontSize = clampTextSize(elements, base, p.fontSize).value;
             setDoc((d) => ({ ...d, elements: [...d.elements, base] }));
-            set({ selectedId: base.id });
+            set(selection([base.id]));
           },
 
           addLogo: (variant) => {
@@ -397,14 +470,14 @@ export const useEditor = create<EditorState>()(
               const oldW = getLogo(existing.variant).width * existing.scale;
               const scale = oldW / getLogo(variant).width;
               mapEl(existing.id, (e) => ({ ...(e as LogoEl), variant, scale }));
-              set({ selectedId: existing.id });
+              set(selection([existing.id]));
               return;
             }
             const scale = LOGO_SIZES.M / getLogo(variant).width;
             const el: LogoEl = { id: uid(), kind: 'logo', variant, x: 0, y: 0, rotation: 0, scale };
-            Object.assign(el, logoPlacement(el, 'bc'));
+            Object.assign(el, logoPlacement(el, 'bc', get().doc.format));
             setDoc((d) => ({ ...d, elements: [...d.elements, el] }));
-            set({ selectedId: el.id });
+            set(selection([el.id]));
           },
 
           setLogoSize: (size) => {
@@ -416,8 +489,8 @@ export const useEditor = create<EditorState>()(
           placeLogo: (place) => {
             const logo = get().doc.elements.find((e): e is LogoEl => e.kind === 'logo');
             if (!logo) return;
-            mapEl(logo.id, (e) => ({ ...e, ...logoPlacement(logo, place) }));
-            set({ selectedId: logo.id });
+            mapEl(logo.id, (e) => ({ ...e, ...logoPlacement(logo, place, get().doc.format) }));
+            set(selection([logo.id]));
           },
 
           addImage: (meta, at) => {
@@ -427,7 +500,8 @@ export const useEditor = create<EditorState>()(
               get().showToast('error', 'Tá lotado! Cabem até 5 imagens por post 😅');
               return;
             }
-            const pos = at ? clampImageCenter(at.x, at.y) : freeCenter(elements);
+            const { width: postW, height: postH } = getPostDimensions(get().doc.format);
+            const pos = at ? clampImageCenter(at.x, at.y, postW, postH) : freeCenter(elements, postW / 2, postH / 2);
             const el: ImageEl = {
               id: uid(),
               kind: 'image',
@@ -436,14 +510,14 @@ export const useEditor = create<EditorState>()(
               x: pos.x,
               y: pos.y,
               rotation: 0,
-              scale: initialImageScale(meta.width, meta.height),
+              scale: initialImageScale(meta.width, meta.height, 0.7, postW, postH),
               flipX: false,
               flipY: false,
               width: meta.width,
               height: meta.height,
             };
             setDoc((d) => ({ ...d, elements: [...d.elements, el] }));
-            set({ selectedId: el.id });
+            set(selection([el.id]));
           },
 
           replaceImage: (id, meta, restore) => {
@@ -485,6 +559,7 @@ export const useEditor = create<EditorState>()(
             const wantV = corner[0] === 't' ? 'top' : 'bottom';
             const flipX = anchor.h === 'center' ? false : anchor.h !== wantH;
             const flipY = anchor.v !== wantV;
+            const { width: postW, height: postH } = getPostDimensions(get().doc.format);
             const w = asset.width * el.scale;
             const h = asset.height * el.scale;
             mapEl(id, (e) => ({
@@ -492,8 +567,8 @@ export const useEditor = create<EditorState>()(
               flipX,
               flipY,
               rotation: 0,
-              x: wantH === 'left' ? w / 2 : POST_W - w / 2,
-              y: wantV === 'top' ? h / 2 : POST_H - h / 2,
+              x: wantH === 'left' ? w / 2 : postW - w / 2,
+              y: wantV === 'top' ? h / 2 : postH - h / 2,
             }));
           },
 
@@ -520,7 +595,7 @@ export const useEditor = create<EditorState>()(
 
           removeElement: (id) => {
             setDoc((d) => ({ ...d, elements: d.elements.filter((e) => e.id !== id) }));
-            set((s) => ({ selectedId: s.selectedId === id ? null : s.selectedId, editingId: null }));
+            set((s) => ({ ...selection(s.selectedIds.filter((i) => i !== id)), editingId: null }));
           },
 
           duplicateElement: (id) => {
@@ -541,7 +616,7 @@ export const useEditor = create<EditorState>()(
               elements.splice(i + 1, 0, copy);
               return { ...d, elements };
             });
-            set({ selectedId: copy.id });
+            set(selection([copy.id]));
           },
 
           bringForward: (id) =>
@@ -562,7 +637,48 @@ export const useEditor = create<EditorState>()(
               return { ...d, elements };
             }),
 
-          reset: () => set({ doc: emptyDoc(), finish: defaultFinish(), selectedId: null, editingId: null, step: 0 }),
+          applyPatches: (patches) => {
+            if (patches.length === 0) return;
+            setDoc((d) => ({ ...d, elements: applyElPatches(d.elements, patches) }));
+          },
+
+          removeElements: (ids) => {
+            if (ids.length === 0) return;
+            const gone = new Set(ids);
+            setDoc((d) => ({ ...d, elements: d.elements.filter((e) => !gone.has(e.id)) }));
+            set((s) => ({ ...selection(s.selectedIds.filter((i) => !gone.has(i))), editingId: null }));
+          },
+
+          duplicateElements: (ids) => {
+            const r = duplicateGroup(get().doc.elements, ids, uid);
+            if (r.blocked === 'noImageSlots') {
+              get().showToast('error', 'Tá lotado! Cabem até 5 imagens por post 😅');
+              return;
+            }
+            if (r.blocked === 'onlyLogo') {
+              get().showToast('info', 'Só cabe uma logo por post 😉');
+              return;
+            }
+            if (r.copyIds.length === 0) return;
+            setDoc((d) => ({ ...d, elements: r.elements }));
+            const only = r.copyIds.length === 1 ? r.elements.find((e) => e.id === r.copyIds[0]) : undefined;
+            set(only ? { ...selection(r.copyIds), step: STEP_OF_KIND[only.kind] } : selection(r.copyIds));
+            if (r.skippedLogo) get().showToast('info', 'A logo ficou de fora: só cabe uma por post 😉');
+          },
+
+          bringForwardMany: (ids) =>
+            setDoc((d) => {
+              const elements = reorderForward(d.elements, ids);
+              return elements.every((e, i) => e === d.elements[i]) ? d : { ...d, elements };
+            }),
+
+          sendBackwardMany: (ids) =>
+            setDoc((d) => {
+              const elements = reorderBackward(d.elements, ids);
+              return elements.every((e, i) => e === d.elements[i]) ? d : { ...d, elements };
+            }),
+
+          reset: () => set({ doc: emptyDoc(), finish: defaultFinish(), ...selection([]), editingId: null, step: 0 }),
         };
       },
       {
@@ -597,6 +713,23 @@ export const useEditor = create<EditorState>()(
   ),
 );
 
+// Undo/redo (ou qualquer troca de doc) pode remover elementos selecionados: poda os ids fantasmas.
+useEditor.subscribe((s, prev) => {
+  if (s.doc === prev.doc) return;
+  const pruned = pruneIds(s.selectedIds, s.doc.elements);
+  if (pruned.length !== s.selectedIds.length) useEditor.setState(selection(pruned));
+});
+
 export const useSelected = () => useEditor((s) => s.doc.elements.find((e) => e.id === s.selectedId) ?? null);
+/** Elementos selecionados, na ordem das camadas (referência estável enquanto doc/seleção não mudam). */
+export const useSelectedElements = () => {
+  const elements = useEditor((s) => s.doc.elements);
+  const ids = useEditor((s) => s.selectedIds);
+  return useMemo(() => elements.filter((e) => ids.includes(e.id)), [elements, ids]);
+};
 export const undo = () => useEditor.temporal.getState().undo();
 export const redo = () => useEditor.temporal.getState().redo();
+
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).__useEditor = useEditor;
+}

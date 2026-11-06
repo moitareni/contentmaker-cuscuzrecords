@@ -6,6 +6,27 @@
 export const POST_W = 1080;
 export const POST_H = 1440;
 
+export type PostFormat = '3:4' | '4:3' | '1:1';
+
+export interface FormatDimensions {
+  width: number;
+  height: number;
+  aspectRatio: PostFormat;
+  aspectClass: '3-4' | '4-3' | '1-1';
+  label: string;
+}
+
+export const POST_FORMATS: Record<PostFormat, FormatDimensions> = {
+  '3:4': { width: 1080, height: 1440, aspectRatio: '3:4', aspectClass: '3-4', label: 'Vertical (3:4)' },
+  '4:3': { width: 1440, height: 1080, aspectRatio: '4:3', aspectClass: '4-3', label: 'Horizontal (4:3)' },
+  '1:1': { width: 1080, height: 1080, aspectRatio: '1:1', aspectClass: '1-1', label: 'Quadrado (1:1)' },
+};
+
+export function getPostDimensions(format: PostFormat = '3:4'): { width: number; height: number } {
+  const f = POST_FORMATS[format] ?? POST_FORMATS['3:4'];
+  return { width: f.width, height: f.height };
+}
+
 export const COLORS = {
   preto: '#0b0500',
   barro: '#942911',

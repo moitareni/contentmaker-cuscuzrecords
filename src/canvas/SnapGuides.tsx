@@ -5,15 +5,22 @@ import { COLORS, POST_H, POST_W } from '../brand/brand';
 export interface SnapGuidesProps {
   v: boolean;
   h: boolean;
+  postWidth?: number;
+  postHeight?: number;
 }
 
-export const SnapGuides: React.FC<SnapGuidesProps> = ({ v, h }) => {
+export const SnapGuides: React.FC<SnapGuidesProps> = ({
+  v,
+  h,
+  postWidth = POST_W,
+  postHeight = POST_H,
+}) => {
   return (
     <>
-      {/* Guia vertical central (x = 540) */}
+      {/* Guia vertical central */}
       {v && (
         <Line
-          points={[POST_W / 2, 0, POST_W / 2, POST_H]}
+          points={[postWidth / 2, 0, postWidth / 2, postHeight]}
           stroke={COLORS.verde}
           strokeWidth={3}
           dash={[8, 8]}
@@ -21,10 +28,10 @@ export const SnapGuides: React.FC<SnapGuidesProps> = ({ v, h }) => {
         />
       )}
 
-      {/* Guia horizontal central (y = 720) */}
+      {/* Guia horizontal central */}
       {h && (
         <Line
-          points={[0, POST_H / 2, POST_W, POST_H / 2]}
+          points={[0, postHeight / 2, postWidth, postHeight / 2]}
           stroke={COLORS.verde}
           strokeWidth={3}
           dash={[8, 8]}

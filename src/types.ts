@@ -1,9 +1,11 @@
-import type { BorderKind, BrandColor, GrainSize, TextStyle } from './brand/brand';
-export type { BorderKind, BrandColor, TextStyle };
+import type { BorderKind, BrandColor, FormatDimensions, GrainSize, PostFormat, TextStyle } from './brand/brand';
+import { POST_FORMATS } from './brand/brand';
+export type { BorderKind, BrandColor, FormatDimensions, PostFormat, TextStyle };
+export { POST_FORMATS };
 
 export interface BaseEl {
   id: string;
-  /** Centro do elemento, em px do post (1080×1440). */
+  /** Centro do elemento, em px do post (1080×1440 padrão). */
   x: number;
   y: number;
   rotation: number;
@@ -66,9 +68,11 @@ export type El = DecorationEl | ImageEl | TextEl | LogoEl;
 export type ElKind = El['kind'];
 
 export interface Doc {
+  format?: PostFormat;
   backgroundId: string | null;
   backgroundFlipX?: boolean;
   backgroundFlipY?: boolean;
+  backgroundOffsetY?: number;
   /** Ordem do array = ordem das camadas (último fica por cima). */
   elements: El[];
 }

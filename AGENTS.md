@@ -14,8 +14,14 @@ O objetivo é permitir que o cliente crie de forma prática, rápida e intuitiva
 ## 2. Regras Inegociáveis da Marca
 
 ### 2.1 Formato e Fundo
-- **Formato fixo**: sempre **3:4** (resolução padrão de exportação: **1080×1440 px**).
-- **Fundo travado**: o fundo cobre a folha inteira e **nunca** pode ser deslocado pelo usuário para evitar bordas vazias. Pode ser espelhado horizontalmente (`↔`) e verticalmente (`↕`) pelo usuário no Passo 1, pivotado perfeitamente no centro (1080×1440) sem vazar margens.
+- **Formatos suportados**:
+  - **Vertical (3:4)**: formato padrão (resolução de exportação: **1080×1440 px**). Fundo cobre a folha inteira travado.
+  - **Horizontal (4:3)**: proporção paisagem (resolução de exportação: **1440×1080 px**). Mesmas opções de texturas do 3:4, aplicadas rotacionadas 90° pivotadas no centro, preenchendo a folha sem distorção nem perda de qualidade.
+  - **Quadrado (1:1)**: proporção quadrada (resolução de exportação: **1080×1080 px**). A largura encaixa perfeitamente (1080 px) e o excesso de altura (360 px) é recortado.
+- **Deslize e enquadramento em 1:1**:
+  - Exclusivamente no **Passo 1 (Fundo, `step === 0`)**, o usuário pode deslizar o fundo verticalmente (arrastando direto na folha ou usando o slider e botões rápidos "Topo", "Centro" e "Base").
+  - **Ao sair da aba Fundo (`step !== 0`)**, o deslize é estritamente **desativado e travado** (`draggable={false}`, `listening={false}`), garantindo que o fundo nunca seja deslocado por engano enquanto o usuário manipula enfeites, fotos ou textos.
+- **Espelhamento centralizado**: o fundo pode ser espelhado horizontalmente (`↔`) e verticalmente (`↕`) pelo usuário no Passo 1, pivotado perfeitamente no centro sem vazar margens.
 
 ### 2.2 Paleta de Cores Oficial
 Somente as seguintes cores podem ser utilizadas na arte e nos textos:
@@ -92,6 +98,13 @@ Quando o "Efeito da Marca" está ativo em títulos:
   ferramenta continua em background p/ acelerar a próxima). Uma inferência por vez; último
   modo lembrado em `localStorage`.
 
+### 2.11 Seleção múltipla (Ctrl/Cmd/Shift + clique)
+- **Seleção conjunta**: o usuário pode segurar `Ctrl`, `Cmd` (Mac) ou `Shift` e clicar em múltiplos elementos na folha para selecioná-los juntos.
+- **Alternância**: clicar num elemento já selecionado com modificador o remove da seleção. Clicar sem modificador num elemento o seleciona isoladamente. Clicar no vazio desmarca tudo (a não ser que uma tecla modificadora esteja pressionada).
+- **Transformações em lote**: o `Transformer` único do Konva engloba todos os nós selecionados. É possível mover o conjunto (com snap ímã no centro e nas guias de layout calculado sobre a caixa de união do grupo), redimensionar proporcionalmente (`keepRatio`) e rotacionar em torno do centro comum.
+- **Regra de Texto em grupo**: durante o redimensionamento em conjunto, a regra `Texto ≤ Título` (seção 2.6) e os limites globais de fonte são checados sobre a proporção do conjunto; se o limite for atingido, o `boundBoxFunc` trava a escala e emite o toast amigável correspondente.
+- **Ações em lote**: a `AlignToolbar` exibe o selo `N×` com as ações de alinhar à página pela caixa do grupo, trazer pra frente, enviar pra trás, duplicar (respeitando o limite de 5 imagens e ignorando logo duplicada com aviso) e excluir. Atalhos `Delete`, `Ctrl+D` e setas direcionais operam sobre todos os itens selecionados.
+
 ---
 
 ## 3. Estrutura do Repositório
@@ -119,7 +132,8 @@ post-generator/
     │   └── build-assets.mjs    # Pipeline de otimização lossless e geração de manifest
     ├── e2e/
     │   ├── flow.spec.ts        # Fluxo completo de criação (Playwright)
-    │   └── image.spec.ts       # Etapa 3: imagens do usuário (upload/drop, limite 5, export)
+    │   ├── image.spec.ts       # Etapa 3: imagens do usuário (upload/drop, limite 5, export)
+    │   └── multiselect.spec.ts # Seleção conjunta (Ctrl+clique, mover, escala, giro, undo)
     ├── public/
     │   └── brand/              # Assets WebP otimizados gerados pelo script (+ thumbs/ para a UI)
     └── src/
@@ -128,8 +142,8 @@ post-generator/
         ├── theme/              # tokens.css e global.css (design tokens da UI)
         ├── types.ts            # Tipos compartilhados do editor (6 etapas, El, ImageEl)
         ├── assets.ts           # Acesso tipado ao assets-manifest.json gerado
-        ├── lib/                # Regras de alinhamento, limites de texto, export, atalhos,
-        │                       #   grão, zoom, estilo do editor inline e IMAGENS DO USUÁRIO
+        ├── lib/                # Regras de alinhamento, limites de texto, seleção múltipla (multiSelect.ts),
+        │                       #   export, atalhos, grão, zoom, estilo do editor inline e IMAGENS DO USUÁRIO
         │                       #   (imageRules.ts, imageImport.ts, userImages.ts/IndexedDB)
         │                       #   e REMOÇÃO DE FUNDO client-side (bgRemoval.ts, bgRemovalStatus.ts)
         ├── canvas/             # Componentes Konva (EditorCanvas, Nodes incl. ImageNode, Snap,

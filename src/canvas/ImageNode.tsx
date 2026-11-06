@@ -8,7 +8,8 @@ import type { ImageEl } from '../types';
 export interface ImageNodeProps {
   element: ImageEl;
   isSelected: boolean;
-  onSelect: () => void;
+  /** Recebe o evento do Konva: Ctrl/Cmd/Shift soma/remove da seleção. */
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   onChange: (patch: Partial<ImageEl>) => void;
   onDragMoveSnap: (node: Konva.Node) => void;
   onDragEndSnap: () => void;

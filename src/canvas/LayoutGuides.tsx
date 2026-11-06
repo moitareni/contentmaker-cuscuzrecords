@@ -7,6 +7,8 @@ export interface LayoutGuidesProps {
   showMargins: boolean;
   showCenters: boolean;
   showThirds: boolean;
+  postWidth?: number;
+  postHeight?: number;
 }
 
 /**
@@ -19,6 +21,8 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
   showMargins,
   showCenters,
   showThirds,
+  postWidth = POST_W,
+  postHeight = POST_H,
 }) => {
   return (
     <>
@@ -27,8 +31,8 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
         <Rect
           x={margin}
           y={margin}
-          width={POST_W - margin * 2}
-          height={POST_H - margin * 2}
+          width={postWidth - margin * 2}
+          height={postHeight - margin * 2}
           stroke={GUIDE_COLORS.margin}
           strokeWidth={3}
           dash={[10, 8]}
@@ -40,14 +44,14 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
       {showCenters && (
         <>
           <Line
-            points={[POST_W / 2, 0, POST_W / 2, POST_H]}
+            points={[postWidth / 2, 0, postWidth / 2, postHeight]}
             stroke={GUIDE_COLORS.center}
             strokeWidth={3}
             dash={[8, 8]}
             listening={false}
           />
           <Line
-            points={[0, POST_H / 2, POST_W, POST_H / 2]}
+            points={[0, postHeight / 2, postWidth, postHeight / 2]}
             stroke={GUIDE_COLORS.center}
             strokeWidth={3}
             dash={[8, 8]}
@@ -60,7 +64,7 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
       {showThirds && (
         <>
           <Line
-            points={[POST_W / 3, 0, POST_W / 3, POST_H]}
+            points={[postWidth / 3, 0, postWidth / 3, postHeight]}
             stroke={GUIDE_COLORS.third}
             strokeWidth={2}
             dash={[4, 6]}
@@ -68,7 +72,7 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
             listening={false}
           />
           <Line
-            points={[(2 * POST_W) / 3, 0, (2 * POST_W) / 3, POST_H]}
+            points={[(2 * postWidth) / 3, 0, (2 * postWidth) / 3, postHeight]}
             stroke={GUIDE_COLORS.third}
             strokeWidth={2}
             dash={[4, 6]}
@@ -76,7 +80,7 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
             listening={false}
           />
           <Line
-            points={[0, POST_H / 3, POST_W, POST_H / 3]}
+            points={[0, postHeight / 3, postWidth, postHeight / 3]}
             stroke={GUIDE_COLORS.third}
             strokeWidth={2}
             dash={[4, 6]}
@@ -84,7 +88,7 @@ export const LayoutGuides: React.FC<LayoutGuidesProps> = ({
             listening={false}
           />
           <Line
-            points={[0, (2 * POST_H) / 3, POST_W, (2 * POST_H) / 3]}
+            points={[0, (2 * postHeight) / 3, postWidth, (2 * postHeight) / 3]}
             stroke={GUIDE_COLORS.third}
             strokeWidth={2}
             dash={[4, 6]}

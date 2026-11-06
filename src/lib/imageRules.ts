@@ -51,16 +51,16 @@ export function downscaleDimensions(
  * Escala inicial da imagem ao entrar na folha: ocupa no máximo ~70% da
  * largura/altura do post, sem ampliações (evita desfocar foto pequena).
  */
-export function initialImageScale(width: number, height: number, fill = 0.7): number {
+export function initialImageScale(width: number, height: number, fill = 0.7, postW = POST_W, postH = POST_H): number {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 1;
-  return Math.min(1, (POST_W * fill) / width, (POST_H * fill) / height);
+  return Math.min(1, (postW * fill) / width, (postH * fill) / height);
 }
 
-/** Mantém o centro do drop dentro da folha (0 ≥ x ≥ POST_W, 0 ≥ y ≥ POST_H). */
-export function clampImageCenter(x: number, y: number): { x: number; y: number } {
-  const cx = Number.isFinite(x) ? x : POST_W / 2;
-  const cy = Number.isFinite(y) ? y : POST_H / 2;
-  return { x: Math.min(POST_W, Math.max(0, cx)), y: Math.min(POST_H, Math.max(0, cy)) };
+/** Mantém o centro do drop dentro da folha (0 ≥ x ≥ postW, 0 ≥ y ≥ postH). */
+export function clampImageCenter(x: number, y: number, postW = POST_W, postH = POST_H): { x: number; y: number } {
+  const cx = Number.isFinite(x) ? x : postW / 2;
+  const cy = Number.isFinite(y) ? y : postH / 2;
+  return { x: Math.min(postW, Math.max(0, cx)), y: Math.min(postH, Math.max(0, cy)) };
 }
 
 export function countImages(elements: El[]): number {

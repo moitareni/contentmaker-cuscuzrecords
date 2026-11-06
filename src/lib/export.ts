@@ -30,6 +30,8 @@ function formatDateForFile(): string {
 export interface ExportOptions {
   stage: Konva.Stage;
   stageDisplayWidth: number;
+  postWidth?: number;
+  postHeight?: number;
 }
 
 /** `data.userImageId` marcado no Konva Group pela ImageNode. */
@@ -52,24 +54,29 @@ function collectUserImageIds(stage: Konva.Stage): Set<string> {
  * Exporta o post em alta resolução (exatamente 1080×1440 PNG)
  * e dispara o download com confete comemorativo.
  */
-export async function exportPost({ stage, stageDisplayWidth }: ExportOptions): Promise<void> {
+export async function exportPost({
+  stage,
+  stageDisplayWidth,
+  postWidth = POST_W,
+  postHeight = POST_H,
+}: ExportOptions): Promise<void> {
   await ensureFontsLoaded();
   // Imagens do usuário podem estar no meio do load esperado pelo Konva.
   await ensureUserImagesReady(collectUserImageIds(stage));
 
   // O stage renderiza no displayWidth escalado.
-  // pixelRatio garante que a saída seja precisamente 1080×1440.
-  const pixelRatio = POST_W / stageDisplayWidth;
+  // pixelRatio garante que a saída seja precisamente na resolução do formato ativo.
+  const pixelRatio = postWidth / stageDisplayWidth;
 
   const dataUrl = stage.toDataURL({
     pixelRatio,
     mimeType: 'image/png',
     // A folha começa no canto do pad do palco (stage.x/y); recorta a partir
-    // dela para que o PNG saia exatamente 1080×1440 da arte.
+    // dela para que o PNG saia exatamente nas dimensões da arte.
     x: stage.x(),
     y: stage.y(),
     width: stageDisplayWidth,
-    height: (stageDisplayWidth * POST_H) / POST_W,
+    height: (stageDisplayWidth * postHeight) / postWidth,
   });
 
   const filename = `cuscuz-post-${formatDateForFile()}.png`;

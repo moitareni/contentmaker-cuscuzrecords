@@ -18,8 +18,9 @@ export interface TextNodeProps {
   isSelected: boolean;
   /** Quando true, esconde as camadas de texto (o overlay in-place assume). */
   isEditing?: boolean;
-  onSelect: () => void;
-  onDoubleClick: () => void;
+  /** Recebe o evento do Konva: Ctrl/Cmd/Shift soma/remove da seleção. */
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onDoubleClick: (e?: Konva.KonvaEventObject<unknown>) => void;
   onChange: (patch: Partial<TextEl>) => void;
   onApplyTextSize: (requested: number) => number;
   /** Reporta a caixa total (texto + pads) em px do post para o editor in-place. */

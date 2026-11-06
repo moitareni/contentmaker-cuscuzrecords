@@ -10,6 +10,7 @@ import { Toast } from './components/Toast';
 import { IconButton } from './components/ui/IconButton';
 import { EditorCanvas, type EditorCanvasHandle } from './canvas/EditorCanvas';
 import { exportPost } from './lib/export';
+import { getPostDimensions } from './brand/brand';
 import { useKeyboardShortcuts } from './lib/shortcuts';
 import { BackgroundStep } from './steps/BackgroundStep';
 import { DecorationStep } from './steps/DecorationStep';
@@ -60,9 +61,14 @@ export const App: React.FC = () => {
       // Aguarda um frame para que Transformer, editor e guias saiam da renderização
       await new Promise((res) => setTimeout(res, 50));
 
+      const currentDoc = useEditor.getState().doc;
+      const { width: postWidth, height: postHeight } = getPostDimensions(currentDoc.format);
+
       await exportPost({
         stage,
         stageDisplayWidth: displayWidth,
+        postWidth,
+        postHeight,
       });
 
       showToast('success', 'Post salvo com sucesso! 🌽 Prontinho pro feed do Insta!');
