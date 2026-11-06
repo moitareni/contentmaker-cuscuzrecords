@@ -7,7 +7,7 @@ Este documento estabelece o contexto do negócio, regras inquebráveis de identi
 ## 1. Contexto do Projeto
 
 O **Cuscuz Records Insta Kit** é uma aplicação web estática criada sob medida para a gravadora independente **Cuscuz Records**.
-O objetivo é permitir que o cliente crie de forma prática, rápida e intuitiva posts para o feed do Instagram no formato **3:4 (1080×1440)**, mantendo 100% de consistência com a identidade visual da marca.
+O objetivo é permitir que o cliente crie de forma prática, rápida e intuitiva posts para o feed do Instagram nos formatos **Vertical 3:4 (1080×1440)** (padrão), **Horizontal 4:3 (1440×1080)** e **Quadrado 1:1 (1080×1080)**, mantendo 100% de consistência com a identidade visual da marca.
 
 ---
 
@@ -70,7 +70,7 @@ Quando o "Efeito da Marca" está ativo em títulos:
 
 ### 2.9 Imagens do Usuário (etapa 3, opcional)
 - **Limite total: até `IMAGE_MAX_COUNT` (5) imagens por post**, contando duplicatas; a 6ª é bloqueada com toast amigável.
-- Entrada por seletor de arquivos ou **arrastar e soltar** no painel e direto **na folha** (a imagem nasce no ponto do drop, em coordenadas 1080×1440).
+- Entrada por seletor de arquivos ou **arrastar e soltar** no painel e direto **na folha** (a imagem nasce no ponto do drop, posicionada nas coordenadas da folha ativa).
 - Mesmas transformações dos outros elementos: drag, resize proporcional, rotação, flip ↔/↕, snap, camadas, duplicar (respeita o limite), apagar e undo/redo.
 - **Persistência**: só os metadados (imageId, dimensões, transformações) vão no doc/localStorage; o **binário processado + miniatura ficam no IndexedDB** (`cuscuz-insta-kit` / store `images`) — **nunca** guardar foto em base64 no localStorage (estoura cota e trava a UI).
 - Pipeline: raster (png/jpeg/webp/gif/avif/bmp; **SVG recusado**), máx. 25 MB, downscale para no máximo 3000 px no maior lado, encode WebP q0.92 com fallback JPEG, miniatura de 320 px, fila sequencial de importação.
@@ -132,15 +132,16 @@ post-generator/
     │   └── build-assets.mjs    # Pipeline de otimização lossless e geração de manifest
     ├── e2e/
     │   ├── flow.spec.ts        # Fluxo completo de criação (Playwright)
+    │   ├── format.spec.ts      # Formatos 3:4, 4:3, 1:1, corte/deslize e exportação
     │   ├── image.spec.ts       # Etapa 3: imagens do usuário (upload/drop, limite 5, export)
     │   └── multiselect.spec.ts # Seleção conjunta (Ctrl+clique, mover, escala, giro, undo)
     ├── public/
     │   └── brand/              # Assets WebP otimizados gerados pelo script (+ thumbs/ para a UI)
     └── src/
-        ├── brand/brand.ts      # Definições centrais da marca (cores, fontes, presets, limites)
-        ├── store/editorStore.ts# Estado global Zustand + zundo (undo/redo) + persistência
+        ├── brand/brand.ts      # Definições centrais da marca (cores, fontes, presets, POST_FORMATS, getPostDimensions, limites)
+        ├── store/editorStore.ts# Estado global Zustand + zundo (undo/redo, format, backgroundOffsetY) + persistência
         ├── theme/              # tokens.css e global.css (design tokens da UI)
-        ├── types.ts            # Tipos compartilhados do editor (6 etapas, El, ImageEl)
+        ├── types.ts            # Tipos compartilhados do editor (PostFormat, 6 etapas, El, ImageEl, Doc)
         ├── assets.ts           # Acesso tipado ao assets-manifest.json gerado
         ├── lib/                # Regras de alinhamento, limites de texto, seleção múltipla (multiSelect.ts),
         │                       #   export, atalhos, grão, zoom, estilo do editor inline e IMAGENS DO USUÁRIO
