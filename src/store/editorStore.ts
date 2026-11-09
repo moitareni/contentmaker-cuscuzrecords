@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
-import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { debouncedLocalStorage } from '../lib/storage';
 import { temporal } from 'zundo';
 import {
   BORDER_TEXTURE_OPACITY_DEFAULT,
@@ -81,14 +82,14 @@ export interface LayoutGuides {
 const clampInt = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Math.round(v)));
 
-const defaultFinish = (): FinishState => ({
+export const defaultFinish = (): FinishState => ({
   paper: { enabled: FINISH_ENABLED_DEFAULT, opacity: PAPER_OPACITY_DEFAULT },
   grain: { enabled: FINISH_ENABLED_DEFAULT, intensity: GRAIN_INTENSITY_DEFAULT, size: GRAIN_SIZE_DEFAULT },
   borderTexture: { enabled: FINISH_ENABLED_DEFAULT, opacity: BORDER_TEXTURE_OPACITY_DEFAULT },
 });
 
 /** Valida o acabamento restaurado (rascunho antigo ou corrompido). */
-function sanitizeFinish(f: FinishState | undefined): FinishState {
+export function sanitizeFinish(f: FinishState | undefined): FinishState {
   const d = defaultFinish();
   if (!f) return d;
   return {
@@ -197,7 +198,7 @@ const selection = (ids: string[]) => ({
   selectedId: ids.length === 1 ? ids[0] : null,
 });
 
-const emptyDoc = (): Doc => ({
+export const emptyDoc = (): Doc => ({
   format: '3:4',
   backgroundId: null,
   backgroundFlipX: false,
@@ -240,28 +241,8 @@ function logoPlacement(el: LogoEl, place: LogoPlace, format: PostFormat = '3:4')
   return { ...map[place], rotation: 0 };
 }
 
-/** Grava o rascunho com debounce e garante a gravação ao fechar a aba. */
-function debouncedLocalStorage(delay = 300): StateStorage {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let pending: [string, string] | null = null;
-  const flush = () => {
-    if (pending) localStorage.setItem(pending[0], pending[1]);
-    pending = null;
-  };
-  if (typeof window !== 'undefined') window.addEventListener('beforeunload', flush);
-  return {
-    getItem: (k) => localStorage.getItem(k),
-    setItem: (k, v) => {
-      pending = [k, v];
-      clearTimeout(timer);
-      timer = setTimeout(flush, delay);
-    },
-    removeItem: (k) => localStorage.removeItem(k),
-  };
-}
-
 /** Remove referências a assets que não existem mais (ex.: asset apagado da pasta). */
-function sanitize(doc: Doc | undefined): Doc {
+export function sanitize(doc: Doc | undefined): Doc {
   if (!doc) return emptyDoc();
   const validFormats: PostFormat[] = ['3:4', '4:3', '1:1'];
   const format: PostFormat = validFormats.includes(doc.format as PostFormat) ? (doc.format as PostFormat) : '3:4';

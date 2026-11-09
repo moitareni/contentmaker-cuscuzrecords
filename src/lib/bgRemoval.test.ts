@@ -11,7 +11,7 @@ import {
   median3x3,
   sigmoidInPlace,
   smoothstepCurve,
-} from './bgRemoval';
+} from './bgRemovalDsp';
 
 const EPS = 1e-4;
 

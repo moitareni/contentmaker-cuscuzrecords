@@ -11,6 +11,8 @@ export interface BaseEl {
   rotation: number;
   /** Escala uniforme (sempre positiva). Textos mantêm scale=1 e usam fontSize. */
   scale: number;
+  /** true = este elemento vaza para o slide seguinte (crossover visual). */
+  crossover?: boolean;
 }
 
 export interface DecorationEl extends BaseEl {
@@ -111,4 +113,14 @@ export interface Box {
   y: number;
   width: number;
   height: number;
+}
+
+/** Uma unidade do carrossel: doc + acabamento + id único. */
+export interface SlideData {
+  /** Identificador único do slide (gerado na criação, imutável). */
+  id: string;
+  /** Estado do documento (elementos, fundo, formato). */
+  doc: Doc;
+  /** Acabamentos (papel, granulado, textura de borda). */
+  finish: FinishState;
 }

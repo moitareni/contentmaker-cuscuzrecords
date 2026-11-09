@@ -1,0 +1,118 @@
+.thumbWrapper {
+  position: relative;
+  flex-shrink: 0;
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--c-surface-muted);
+  box-shadow: 0 2px 0 #0b0500;
+  overflow: hidden;
+  transition: transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-bounce),
+    border-color var(--duration-fast) ease;
+  cursor: grab;
+}
+
+.thumbWrapper:active {
+  cursor: grabbing;
+}
+
+.aspect34 {
+  width: 60px;
+  height: 80px;
+}
+
+.aspect43 {
+  width: 88px;
+  height: 66px;
+}
+
+.aspect11 {
+  width: 72px;
+  height: 72px;
+}
+
+.active {
+  border: 3px solid #f8ce2b;
+  box-shadow: 0 4px 0 #0b0500;
+  transform: translateY(-2px);
+}
+
+.thumbButton {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: var(--c-creme);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholderText {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+
+.ordinalBadge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: var(--c-amarelo);
+  border: 2px solid var(--c-border);
+  font-family: var(--font-headline);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--c-preto);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.trashBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 6px;
+  background-color: var(--c-surface);
+  border: 2px solid var(--c-border);
+  color: var(--c-barro);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 0 #0b0500;
+}
+
+.trashBtn:hover:not(:disabled) {
+  background-color: var(--c-barro);
+  color: var(--c-creme);
+}
+
+.trashBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

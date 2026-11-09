@@ -12,6 +12,7 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom'],
           konva: ['konva', 'react-konva'],
+          carousel: ['jszip'],
         },
       },
     },

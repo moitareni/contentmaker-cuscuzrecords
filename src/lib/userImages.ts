@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { createExternalStore } from './createExternalStore';
 import {
   IMAGE_THUMB_SIDE,
   IMAGE_WEBP_QUALITY,
@@ -45,16 +45,15 @@ const STORE = 'images';
 const entries = new Map<string, UserImageEntry>();
 /** IDs que existem no IndexedDB (separado dos da sessão para o GC não revogar URL de imagem só-em-sessão). */
 const storedIds = new Set<string>();
-const listeners = new Set<() => void>();
+/**
+ * O Map é mutável in-place (add/remove mutam sem substituir o todo), então a
+ * reatividade usa uma store de versão: cada emit() bumpa o número e re-renderiza.
+ */
+const registryVersion = createExternalStore(0);
 let hydrated = false;
 
 function emit() {
-  for (const l of listeners) l();
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  registryVersion.set((v) => v + 1);
 }
 
 function getEntry(id: string | null | undefined): UserImageEntry | null {
@@ -63,7 +62,8 @@ function getEntry(id: string | null | undefined): UserImageEntry | null {
 
 /** Hook de leitura reativa: devolve o registro do registry (null se indisponível). */
 export function useUserImage(imageId: string | null): UserImageEntry | null {
-  return useSyncExternalStore(subscribe, () => getEntry(imageId));
+  registryVersion.use(); // subscreve ao registry; getEntry lê o Map na hora do render
+  return getEntry(imageId);
 }
 
 function addEntry(entry: UserImageEntry, stored: boolean) {

@@ -1,0 +1,108 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(11, 5, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background-color: var(--c-surface);
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  max-width: 520px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-family: var(--font-headline);
+  font-size: 24px;
+  color: var(--c-barro);
+  margin: 0;
+}
+
+.message {
+  font-family: var(--font-body);
+  font-size: 17px;
+  color: var(--c-text-muted);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.slideList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.slideOption {
+  background-color: var(--c-surface-card);
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 3px 0 #0b0500;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.slideOption.selected {
+  border-color: var(--c-amarelo);
+  background-color: var(--c-creme);
+  box-shadow: 0 4px 0 #0b0500;
+}
+
+.scratchOption {
+  border-style: dashed;
+}
+
+.thumbBox {
+  width: 68px;
+  height: 84px;
+  border: 2px solid var(--c-border);
+  border-radius: 6px;
+  background-color: var(--c-surface-muted);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbPlaceholder {
+  font-family: var(--font-headline);
+  font-size: 18px;
+  color: var(--c-text-muted);
+}
+
+.slideLabel {
+  font-family: var(--font-headline);
+  font-size: 14px;
+  color: var(--c-preto);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}

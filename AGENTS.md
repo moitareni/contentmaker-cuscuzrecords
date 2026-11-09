@@ -9,6 +9,45 @@ Este documento estabelece o contexto do negócio, regras inquebráveis de identi
 O **Cuscuz Records Insta Kit** é uma aplicação web estática criada sob medida para a gravadora independente **Cuscuz Records**.
 O objetivo é permitir que o cliente crie de forma prática, rápida e intuitiva posts para o feed do Instagram nos formatos **Vertical 3:4 (1080×1440)** (padrão), **Horizontal 4:3 (1440×1080)** e **Quadrado 1:1 (1080×1080)**, mantendo 100% de consistência com a identidade visual da marca.
 
+### 1.1 Usuário-alvo e filosofia de experiência (visão do produto)
+
+O objetivo central do projeto é a **experiência do usuário**, e para acertá-la é preciso saber
+**quem** usa o sistema:
+
+- **Perfil**: pessoas **leigas** — sem familiaridade com softwares de edição de imagem
+  (Photoshop, Canva, etc.) e sem conhecimento de conceitos de design.
+- **Meta do produto**: uma pessoa leiga conseguir produzir artes para o próprio Instagram com
+  **qualidade de designer** — ou seja, com as regras de design bem aplicadas *sem que ela
+  precise conhecê-las*.
+
+Para essa meta ser possível, a interface assume estas responsabilidades:
+
+1. **Conduzir por passos** — o processo de criar o post acontece em etapas numeradas, uma
+   preocupação por vez.
+2. **Explicar brevemente cada função** — todo recurso recebe uma descrição curta e legível sobre
+   o que ele faz e quando usar.
+3. **Impor as regras de design** — decisões fora do recomendado para um design bem-feito são
+   **bloqueadas ou sobreponíveis pela interface** (ex.: `Texto ≤ Título`, paleta oficial fechada,
+   fontes da marca), com notificação amigável quando uma tentativa é travada.
+4. **Manter a UI evidente e simples** — rótulos claros em PT-BR, ações de um clique quando
+   possível, e nada escondido atrás de jargão do mundo do design.
+
+Princípios de UX derivados dessa visão (critério para qualquer mudança nesta UI — pergunte:
+*"isso deixa a leiga com menos dúvida, menos medo e menos chance de errar?"*):
+
+- **Reconhecimento em vez de memorização**: mostrar as opções com exemplos visuais (miniaturas)
+  em vez de nomes técnicos; nada que dependa de lembrar um tutorial.
+- **Revelação progressiva**: uma tela mostra só o essencial da etapa atual; recursos avançados
+  ou opcionais são marcados ("opcional") ou escondidos até serem relevantes.
+- **Prevenção acima de correção**: impedir o erro (limites, defaults bons da marca) e oferecer
+  reversão fácil (undo/redo, "Reverter") quando ele acontecer.
+- **Carga cognitiva baixa**: poucas decisões por tela; previews prontos (fundos, presets da
+  logo, tamanhos P/M/G) resolvem a decisão técnica pela pessoa.
+- **Ajuda no contexto**: a orientação aparece exatamente no passo em que é necessária, nunca
+  como um manual a decorar.
+- **Qualidade visível em "tela pequena"**: a arte é consumida no celular — garantias de
+  contraste e hierarquia que a arte pareça certa também na miniatura do feed.
+
 ---
 
 ## 2. Regras Inegociáveis da Marca

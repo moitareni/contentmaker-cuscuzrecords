@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { createExternalStore } from './createExternalStore';
 
 /**
  * Estado reativo da ferramenta de recorte (remoção de fundo).
@@ -38,56 +38,43 @@ const IDLE_MODEL: BgModelStatus = {
   error: null,
 };
 
-let modelStatus: BgModelStatus = IDLE_MODEL;
-let processing: BgProcessing | null = null;
-const listeners = new Set<() => void>();
-
-function emit() {
-  for (const l of listeners) l();
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
+const modelStore = createExternalStore<BgModelStatus>(IDLE_MODEL);
+const processingStore = createExternalStore<BgProcessing | null>(null);
 
 /** Estado do modelo (download/cache) reativo para a UI. */
 export function useBgModelStatus(): BgModelStatus {
-  return useSyncExternalStore(subscribe, () => modelStatus);
+  return modelStore.use();
 }
 
 /** Recorte em andamento (ou null) reativo para a UI. */
 export function useBgProcessing(): BgProcessing | null {
-  return useSyncExternalStore(subscribe, () => processing);
+  return processingStore.use();
 }
 
 export function getBgModelStatus(): BgModelStatus {
-  return modelStatus;
+  return modelStore.get();
 }
 
 export function getBgProcessing(): BgProcessing | null {
-  return processing;
+  return processingStore.get();
 }
 
 export function setBgModelStatus(patch: Partial<BgModelStatus>): void {
-  modelStatus = { ...modelStatus, ...patch };
-  emit();
+  modelStore.patch(patch);
 }
 
 export function setBgModelReady(): void {
-  setBgModelStatus({ phase: 'ready', progress: 1, error: null });
+  modelStore.patch({ phase: 'ready', progress: 1, error: null });
 }
 
 export function setBgModelError(code: string): void {
-  setBgModelStatus({ phase: 'error', error: code });
+  modelStore.patch({ phase: 'error', error: code });
 }
 
 export function beginBgProcessing(next: BgProcessing): void {
-  processing = next;
-  emit();
+  processingStore.set(next);
 }
 
 export function endBgProcessing(): void {
-  processing = null;
-  emit();
+  processingStore.set(null);
 }

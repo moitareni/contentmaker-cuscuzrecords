@@ -1,0 +1,144 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--c-bg);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.card {
+  background-color: var(--c-surface-card);
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 0 var(--c-border));
+}
+
+.title {
+  font-family: var(--font-headline);
+  font-size: 28px;
+  color: var(--c-text-main);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: 17px;
+  color: var(--c-text-muted);
+  margin: 4px 0 0;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.modeCard {
+  background-color: var(--c-surface);
+  border: 3px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 0 #0b0500;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-bounce),
+    background-color var(--duration-fast) ease;
+}
+
+.modeCard:hover {
+  background-color: var(--c-creme);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #0b0500;
+}
+
+.modeCard:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #0b0500;
+}
+
+.modeIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background-color: var(--c-amarelo);
+  border: 3px solid var(--c-border);
+  box-shadow: 0 2px 0 #0b0500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-preto);
+}
+
+.modeTitle {
+  font-family: var(--font-headline);
+  font-size: 22px;
+  color: var(--c-preto);
+}
+
+.modeDesc {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--c-text-muted);
+  line-height: 1.3;
+}
+
+.formatPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formatTitle {
+  font-family: var(--font-headline);
+  font-size: 22px;
+  color: var(--c-barro);
+  margin: 0;
+}
+
+.formatHint {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--c-text-muted);
+  margin: -8px 0 0;
+}
+
+.formatActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 540px) {
+  .optionsGrid {
+    grid-template-columns: 1fr;
+  }
+}

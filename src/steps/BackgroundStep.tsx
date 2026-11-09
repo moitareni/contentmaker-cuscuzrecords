@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { FlipHorizontal, FlipVertical } from 'lucide-react';
 import { manifest } from '../assets';
-import type { PostFormat } from '../brand/brand';
+import { POST_FORMATS, type PostFormat } from '../brand/brand';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Segmented } from '../components/ui/Segmented';
 import { Slider } from '../components/ui/Slider';
 import { ThumbGrid } from '../components/ui/ThumbGrid';
+import { useCarousel } from '../store/carouselStore';
 import { useEditor } from '../store/editorStore';
 import styles from './StepPanel.module.css';
 
 export const BackgroundStep: React.FC = () => {
   const [tab, setTab] = useState<'pronto' | 'puro'>('pronto');
-  const format = useEditor((s) => s.doc.format ?? '3:4');
+  const mode = useCarousel((s) => s.mode);
+  const carouselFormat = useCarousel((s) => s.format);
+  const docFormat = useEditor((s) => s.doc.format ?? '3:4');
+  const format: PostFormat = mode === 'carousel' ? carouselFormat : docFormat;
   const backgroundId = useEditor((s) => s.doc.backgroundId);
   const backgroundFlipX = useEditor((s) => Boolean(s.doc.backgroundFlipX));
   const backgroundFlipY = useEditor((s) => Boolean(s.doc.backgroundFlipY));
@@ -23,9 +27,18 @@ export const BackgroundStep: React.FC = () => {
   const toggleBackgroundFlipX = useEditor((s) => s.toggleBackgroundFlipX);
   const toggleBackgroundFlipY = useEditor((s) => s.toggleBackgroundFlipY);
   const setBackgroundOffsetY = useEditor((s) => s.setBackgroundOffsetY);
+  const showToast = useEditor((s) => s.showToast);
 
   const filtered = manifest.backgrounds.filter((b) => b.category === tab);
   const gridAspectRatio = format === '4:3' ? '4-3' : format === '1:1' ? '1-1' : '3-4';
+
+  const handleFormatChange = (nextFormat: PostFormat) => {
+    if (mode === 'carousel') {
+      showToast('info', 'O formato não pode ser alterado depois que o carrossel foi criado 🎠');
+      return;
+    }
+    setFormat(nextFormat);
+  };
 
   return (
     <div className={styles.container}>
@@ -38,15 +51,37 @@ export const BackgroundStep: React.FC = () => {
 
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Formato do post</h3>
-        <Segmented
-          options={[
-            { value: '3:4', label: 'Vertical (3:4)' },
-            { value: '4:3', label: 'Horizontal (4:3)' },
-            { value: '1:1', label: 'Quadrado (1:1)' },
-          ]}
-          value={format}
-          onChange={(v) => setFormat(v as PostFormat)}
-        />
+        {mode === 'carousel' ? (
+          <div
+            role="status"
+            aria-readonly="true"
+            onClick={() =>
+              showToast('info', 'O formato não pode ser alterado depois que o carrossel foi criado 🎠')
+            }
+            style={{ cursor: 'not-allowed', opacity: 0.75 }}
+            title="Formato fixo no modo carrossel"
+          >
+            <Segmented
+              options={[
+                { value: '3:4', label: POST_FORMATS['3:4'].label },
+                { value: '4:3', label: POST_FORMATS['4:3'].label },
+                { value: '1:1', label: POST_FORMATS['1:1'].label },
+              ]}
+              value={format}
+              onChange={(v) => handleFormatChange(v as PostFormat)}
+            />
+          </div>
+        ) : (
+          <Segmented
+            options={[
+              { value: '3:4', label: 'Vertical (3:4)' },
+              { value: '4:3', label: 'Horizontal (4:3)' },
+              { value: '1:1', label: 'Quadrado (1:1)' },
+            ]}
+            value={format}
+            onChange={(v) => handleFormatChange(v as PostFormat)}
+          />
+        )}
       </div>
 
       {backgroundId && (

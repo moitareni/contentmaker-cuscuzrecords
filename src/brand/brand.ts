@@ -209,3 +209,12 @@ export const GRAIN_STDDEV = 30;
 export const ZOOM_MIN = 0.25;
 export const ZOOM_MAX = 4;
 export const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4] as const;
+
+/** Número máximo de slides por carrossel. */
+export const CAROUSEL_MAX_SLIDES = 10;
+
+/** Largura alvo (px) de cada miniatura de slide na Tira de Miniaturas. */
+export const CAROUSEL_THUMB_WIDTH = 270;
+
+/** Debounce (ms) para regeneração de miniatura após edição. */
+export const CAROUSEL_THUMB_DEBOUNCE = 400;
